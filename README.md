@@ -111,7 +111,7 @@ Nocturne's own code is MIT ([LICENSE](LICENSE)). It bundles or depends on:
 | Bricolage Grotesque (Mathieu Triay), Geist and Geist Mono (Vercel) | SIL OFL 1.1 | Latin woff2 subsets copied from Fontsource into `src/styles/fonts/` with their OFL texts; self-hosted and precached |
 | Motion (`motion`) | MIT | Layout re-set, reorder, margin-word drag |
 | Dexie, dexie-react-hooks | Apache-2.0 | IndexedDB storage |
-| React, React Router, Zustand, chrono-node, Vite, vite-plugin-pwa (Workbox), Vitest, Playwright, Biome, Testing Library | MIT | Framework, parsing, build, tests |
+| React, Zustand, chrono-node, Vite, vite-plugin-pwa (Workbox), Vitest, Playwright, Biome, Testing Library | MIT | Framework, parsing, build, tests |
 | `fractional-indexing` (David Greenspan) | CC0-1.0 | Ordering keys |
 | Capacitor and `@capacitor/*` plugins | MIT | Android shell, notifications, haptics, filesystem, share, preferences, status bar, keyboard, splash |
 | axe-core (`@axe-core/playwright`) | MPL-2.0 | Dev-only accessibility checks; never shipped |

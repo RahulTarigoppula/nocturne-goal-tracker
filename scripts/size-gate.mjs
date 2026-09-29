@@ -1,4 +1,4 @@
-// CI budget: the initial JS (entry chunk + its static imports) must stay ≤ 200 KB gzip.
+// CI budget: the initial JS (entry chunk + its static imports) must stay ≤ 180 KB gzip (spec target; hard limit 200).
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
@@ -10,5 +10,5 @@ for (const f of new Set(files)) {
   total += gz;
   console.log(`${f}  ${(gz / 1024).toFixed(1)} KB gz`);
 }
-console.log(`initial JS: ${(total / 1024).toFixed(1)} KB gz (budget 200)`);
-if (total > 200 * 1024) process.exit(1);
+console.log(`initial JS: ${(total / 1024).toFixed(1)} KB gz (budget 180)`);
+if (total > 180 * 1024) process.exit(1);

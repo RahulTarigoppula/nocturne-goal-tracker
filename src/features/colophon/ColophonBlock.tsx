@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "../../app/hash-router";
 import { setStandfirst } from "../../data/repo";
 import { colophonLines } from "../../engine/colophon";
 import type { Issue } from "../../engine/types";

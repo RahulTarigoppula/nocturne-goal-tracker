@@ -41,11 +41,11 @@ Written 2026-09-29, alongside the first implementation (v0.1.0). These notes rec
 12. **The manual `workflow_dispatch` APK is debug-signed when no keystore secrets exist.** You can sideload a test build before creating the key. Tag builds refuse to run without the keystore.
 13. **Freeze tokens:** one per ISO week, spent on yesterday from the habit sheet. The plan never defined how tokens are earned.
 14. **Storage failure:** when IndexedDB is unavailable the app renders from in-memory defaults and shows the vermilion footnote. It does not crash.
-15. **Routes other than the Front Page are lazy chunks**, and so are the sheets and the colophon/share card. That brings the initial JS to about 196 KB gzip.
+15. **Routes other than the Front Page are lazy chunks**, and so are the sheets and the colophon/share card.
+16. **React Router is replaced by a 120-line hash router** (`src/app/hash-router.tsx`) covering `Link`, `NavLink`, `useNavigate`, `useParams`, `useSearchParams` and route matching. React Router cost about 30 KB gzip for six fixed routes. With it gone, the initial JS is **168.6 KB gzip**, under the 180 KB target, and the CI gate now enforces 180. URLs are unchanged (`/nocturne/#/issues/2026-09-05`).
 
 ## 3. Known gaps (be honest)
 
-- **Initial JS is about 196 KB gzip.** It passes the 200 KB CI gate but misses the 180 KB target. The fixed floor is react-dom, motion (Reorder needs the full bundle), dexie and react-router. The next lever is replacing `Reorder` with a hand-rolled drag so `LazyMotion` can load on demand.
 - **Visual baselines are not committed.** The spec wants them generated on Linux CI only. Once the repo is on GitHub, add `toHaveScreenshot` specs and generate them there.
 - **Not verified on a real device:** Android reminders, exact alarms, reboot re-arm, haptics, edge-to-edge insets, predictive back and the share sheet. The checklist is in `docs/TESTING.md`; log results in `docs/VERIFICATION-LOG.md`.
 - **Not built (v1/someday):**

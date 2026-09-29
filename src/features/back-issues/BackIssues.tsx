@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "../../app/hash-router";
 import { useUi } from "../../app/store";
 import { useIssues } from "../../data/queries";
 import { hhmm, isoWeek, MONTHS, parseKey, runningDate, startOfWeek } from "../../engine/daykey";

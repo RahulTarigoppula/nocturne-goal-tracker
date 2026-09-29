@@ -1,12 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
 import "../styles/tokens.css";
 import "../styles/app.css";
-import { router } from "./router";
+import { App } from "./router";
 
 const root = document.getElementById("root");
-if (root) createRoot(root).render(<RouterProvider router={router} />);
+if (root) createRoot(root).render(<App />);
 
 // Service worker on the web only; the Android build has no SW (the PWA plugin is not even compiled in).
 if (!Capacitor.isNativePlatform() && import.meta.env.PROD && "serviceWorker" in navigator) {

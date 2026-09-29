@@ -13,6 +13,8 @@ import { useEffectiveSettings } from "./useEffectiveSettings";
 export function Providers({ children, navigate }: { children: ReactNode; navigate: (hash: string) => void }) {
   const settings = useEffectiveSettings();
   const lastToday = useRef<string | null>(null);
+  const navRef = useRef(navigate);
+  navRef.current = navigate;
 
   // First launch seed + storage health.
   useEffect(() => {
@@ -105,7 +107,7 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
         const s = useUi.getState();
         s.setNow(clock.now(), s.today ?? todayKey(new Date(), 3));
       },
-      navigate,
+      navigate: (hash) => navRef.current(hash),
       onBack: () => {
         if (useUi.getState().openSheet) {
           useUi.getState().close();
@@ -117,7 +119,7 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
     const unlock = () => unlockAudio();
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });
-  }, [navigate]);
+  }, []);
 
   return <>{children}</>;
 }

@@ -19,7 +19,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-      - name: Bundle budget (initial JS ≤ 200 KB gzip)
+      - name: Bundle budget (initial JS ≤ 180 KB gzip)
         run: node scripts/size-gate.mjs
       - name: SPA fallback for deep links (harmless with hash routing)
         run: cp dist/index.html dist/404.html

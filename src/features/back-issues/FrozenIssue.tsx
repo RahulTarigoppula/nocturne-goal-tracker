@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams } from "../../app/hash-router";
 import { useUi } from "../../app/store";
 import { useDayEntries, useIssue, useIssues, useSettings } from "../../data/queries";
 import { dayGauge, isDayKey } from "../../engine/daykey";

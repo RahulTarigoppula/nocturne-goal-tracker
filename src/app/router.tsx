@@ -1,6 +1,6 @@
 import { Component, lazy, type ReactNode, Suspense } from "react";
-import { createHashRouter, Outlet, useNavigate } from "react-router";
 import { FrontPage } from "../features/front-page/FrontPage";
+import { HashRouter, navigateTo, type Route, Routes } from "./hash-router";
 import { Providers } from "./providers";
 import { Shell } from "./Shell";
 
@@ -25,15 +25,6 @@ class RouteBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-function Root() {
-  const navigate = useNavigate();
-  return (
-    <Providers navigate={(hash) => navigate(hash.replace(/^#/, ""))}>
-      <Outlet />
-    </Providers>
-  );
-}
-
 // The Front Page ships in the first chunk; every other surface is a lazy chunk.
 const WeekSpread = lazy(() => import("../features/week-spread/WeekSpread").then((m) => ({ default: m.WeekSpread })));
 const Ledger = lazy(() => import("../features/ledger/Ledger").then((m) => ({ default: m.Ledger })));
@@ -47,22 +38,24 @@ const wrap = (el: ReactNode) => (
   </RouteBoundary>
 );
 
-export const router = createHashRouter([
-  {
-    element: <Root />,
-    children: [
-      {
-        element: <Shell />,
-        children: [
-          { path: "/", element: wrap(<FrontPage />) },
-          { path: "/upcoming", element: wrap(<WeekSpread />) },
-          { path: "/ledger", element: wrap(<Ledger />) },
-          { path: "/issues", element: wrap(<BackIssues />) },
-          { path: "/issues/:dayKey", element: wrap(<FrozenIssue />) },
-          { path: "/colophon", element: wrap(<ColophonPage />) },
-          { path: "*", element: wrap(<FrontPage />) },
-        ],
-      },
-    ],
-  },
-]);
+const ROUTES: Route[] = [
+  { path: "/", element: wrap(<FrontPage />) },
+  { path: "/upcoming", element: wrap(<WeekSpread />) },
+  { path: "/ledger", element: wrap(<Ledger />) },
+  { path: "/issues", element: wrap(<BackIssues />) },
+  { path: "/issues/:dayKey", element: wrap(<FrozenIssue />) },
+  { path: "/colophon", element: wrap(<ColophonPage />) },
+  { path: "*", element: wrap(<FrontPage />) },
+];
+
+export function App() {
+  return (
+    <HashRouter>
+      <Providers navigate={(hash) => navigateTo(hash.replace(/^#/, ""))}>
+        <Shell>
+          <Routes routes={ROUTES} />
+        </Shell>
+      </Providers>
+    </HashRouter>
+  );
+}

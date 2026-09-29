@@ -1,6 +1,5 @@
 import { MotionConfig } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { DigitRoll } from "../components/ui/DigitRoll";
 import { useDaysWithEntries, useIssue } from "../data/queries";
 import {
@@ -15,6 +14,7 @@ import {
   weekdayOf,
 } from "../engine/daykey";
 import { DayGauge, Numeral } from "../features/front-page/Masthead";
+import { Link, NavLink, useLocation, useNavigate } from "./hash-router";
 import { SheetHost } from "./SheetHost";
 import { useUi } from "./store";
 import { useEffectiveSettings } from "./useEffectiveSettings";
@@ -142,7 +142,7 @@ function EditionFootnote() {
   );
 }
 
-export function Shell() {
+export function Shell({ children }: { children: React.ReactNode }) {
   const settings = useEffectiveSettings();
   const today = useUi((s) => s.today);
   const announce = useUi((s) => s.announce);
@@ -183,7 +183,7 @@ export function Shell() {
       <div className="app">
         <Rail />
         <main className="pages" id="main" key={loc.pathname}>
-          <Outlet />
+          {children}
         </main>
         <FooterTabs />
         <div className="margin-caption" aria-hidden="true">

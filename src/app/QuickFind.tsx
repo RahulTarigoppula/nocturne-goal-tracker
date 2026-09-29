@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router";
 import { searchAll } from "../data/queries";
 import { runningDate } from "../engine/daykey";
+import { useNavigate } from "./hash-router";
 import { useUi } from "./store";
 
 interface Hit {

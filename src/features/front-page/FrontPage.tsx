@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams } from "../../app/hash-router";
 import { useUi } from "../../app/store";
 import { useEffectiveSettings } from "../../app/useEffectiveSettings";
 import { useDayEntries, useIssue, useIssues } from "../../data/queries";
