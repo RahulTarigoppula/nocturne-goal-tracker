@@ -194,7 +194,7 @@ export const EntryRow = memo(function EntryRow(p: Props) {
             aria-disabled={done}
             data-entry-folio={e.id}
             onClick={() => !done && p.onStrike(e)}
-            onFocus={() => p.onSelect(e)}
+            onFocus={(ev) => ev.currentTarget.matches(":focus-visible") && p.onSelect(e)}
           >
             {done || folio === null ? "—" : <DigitRoll value={pad2(folio)} label={String(folio)} />}
           </button>
@@ -204,7 +204,7 @@ export const EntryRow = memo(function EntryRow(p: Props) {
               className="title"
               data-entry-title={e.id}
               onClick={(ev) => p.onOpen(e, ev.currentTarget)}
-              onFocus={() => p.onSelect(e)}
+              onFocus={(ev) => ev.currentTarget.matches(":focus-visible") && p.onSelect(e)}
             >
               <span className="title-text">
                 {e.title}

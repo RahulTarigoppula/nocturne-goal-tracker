@@ -286,3 +286,22 @@ test("hold to reorder: the lifted row takes the lift styling and the new order p
   await page.reload();
   await expect.poll(titles).toEqual(after);
 });
+
+test("text scaling: 130 % font at 320 px wide never scrolls sideways", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, timezoneId: "Asia/Kolkata" });
+  const page = await ctx.newPage();
+  await page.clock.install({ time: HOUSE });
+  await page.goto("http://localhost:4317/nocturne/#/");
+  await page.addStyleTag({ content: "html { font-size: 130% !important; }" });
+  for (const route of ["#/", "#/upcoming", "#/ledger", "#/issues", "#/colophon"]) {
+    await page.goto(`http://localhost:4317/nocturne/${route}`);
+    await page.addStyleTag({ content: "html { font-size: 130% !important; }" });
+    await page.waitForTimeout(300);
+    const overflow = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      return main ? main.scrollWidth - main.clientWidth : 0;
+    });
+    expect(overflow, route).toBeLessThanOrEqual(1);
+  }
+  await ctx.close();
+});

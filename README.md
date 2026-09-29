@@ -4,6 +4,13 @@
 
 **Status: v0.1.0 built, tested locally, and ready for you to deploy.** The app, engine, tests, Android shell and CI workflows are in this repo. It is not live yet: going live needs your GitHub account and your signing key. Follow [Go live](#go-live-your-steps-about-20-minutes); it takes about 20 minutes.
 
+<p>
+  <img src="docs/screenshots/front-page-night.png" width="240" alt="Front Page, Night, evening edition">
+  <img src="docs/screenshots/colophon.png" width="240" alt="A closed issue with its colophon">
+  <img src="docs/screenshots/front-page-proof.png" width="240" alt="Front Page in the Proof theme">
+</p>
+<img src="docs/screenshots/desktop.png" width="740" alt="Desktop: rail with masthead and mini calendar, reading column, vertical margin caption">
+
 ## What it is
 
 - A local-first daily to-do and habit tracker. Today is an "issue": a masthead, folio-numbered entries between hairlines, and a colophon that prints when you strike the last entry.
@@ -31,9 +38,10 @@ Open http://localhost:5173. Other scripts:
 
 | Command | What |
 |---|---|
-| `npm run test:unit` | Vitest: engine golden tables, repo on fake-indexeddb, gist client (149 tests) with coverage |
+| `npm run test:unit` | Vitest: engine golden tables incl. Berlin DST and ±14 h zones, repo on fake-indexeddb, gist client — with coverage |
 | `npm run build` | Typecheck + production build (`VITE_BASE_PATH=/nocturne/` for the Pages shape) |
-| `npm run test:e2e` | Playwright against the built app on port 4317: 12 flows plus axe on every route (desktop + Pixel 7) |
+| `npm run test:e2e` | Playwright against the built app on port 4317: flows, gestures, token checks, 130 % text at 320 px, axe on every route (desktop + Pixel 7) |
+| `SCREENS=1 npx playwright test e2e/screens.spec.ts --project=desktop-chromium` | Regenerates the README screenshots |
 | `npm run lint` | Biome |
 | `node scripts/size-gate.mjs` | Initial-JS budget check after a build |
 

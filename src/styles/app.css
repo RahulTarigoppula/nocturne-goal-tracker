@@ -156,10 +156,17 @@ button {
 .rh-swap {
   position: relative;
   display: inline-grid;
+  min-width: 0;
+  overflow: hidden;
+}
+.page-head > :last-child {
+  flex-shrink: 0;
 }
 .rh-swap > span {
   grid-area: 1 / 1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: opacity var(--dur-base) var(--ease-in-out);
 }
 .rh-swap .ev {
@@ -709,6 +716,7 @@ button {
 }
 .standfirst input {
   width: 100%;
+  padding: 0;
   background: none;
   border: 0;
   outline: 0;
