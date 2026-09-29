@@ -280,10 +280,9 @@ test("hold to reorder: the lifted row takes the lift styling and the new order p
   expect(radius).toBe("12px");
   for (let i = 1; i <= 7; i++) await page.mouse.move(x, y + i * 10);
   await page.mouse.up();
-  await page.waitForTimeout(500);
+  const want = [before[1], before[0], before[2]];
+  await expect.poll(titles).toEqual(want);
   const after = await titles();
-  expect(after[0]).toBe(before[1]);
-  expect(after[1]).toBe(before[0]);
   await page.reload();
   await expect.poll(titles).toEqual(after);
 });
