@@ -1,0 +1,30 @@
+# Lint + unit + e2e on every push/PR. E2E never runs in pages.yml, so a flaky gesture cannot block a deploy.
+name: ci
+on: { pull_request: {}, push: { branches: [main] } }
+permissions: { contents: read }
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx biome ci .
+      - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+        env: { VITE_BASE_PATH: /nocturne/ }
+      - run: npm run test:e2e
+      - name: Android build shape (no service worker in the APK web bundle)
+        run: |
+          VITE_PLATFORM=android VITE_BASE_PATH=/ npx vite build --outDir dist-android
+          test ! -f dist-android/sw.js
+          ! grep -rl "registerSW\|workbox" dist-android/assets
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 7

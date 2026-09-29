@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useUi } from "../../app/store";
 import { useDayEntries, useIssue, useIssues, useSettings } from "../../data/queries";
@@ -11,13 +11,14 @@ import { isNative } from "../../platform";
 import { haptics } from "../../platform/haptics";
 import { requestPermission } from "../../platform/notifications";
 import { ms } from "../../styles/motion";
-import { ColophonBlock } from "../colophon/ColophonBlock";
 import { Composer } from "../composer/Composer";
 import { sound } from "../sound/synth";
 import { EntryList } from "./EntryList";
 import { Masthead } from "./Masthead";
 import { isOverdue } from "./meta";
 import { useEntryActions } from "./useEntryActions";
+
+const ColophonBlock = lazy(() => import("../colophon/ColophonBlock").then((m) => ({ default: m.ColophonBlock })));
 
 export function FrontPage() {
   const today = useUi((s) => s.today);
@@ -216,11 +217,13 @@ export function FrontPage() {
         )}
       </div>
       {closed && issue && (
-        <ColophonBlock
-          issue={issue}
-          longest={longestIssueStreak(issues ?? [])}
-          animate={justClosed === issue.closedAt}
-        />
+        <Suspense fallback={null}>
+          <ColophonBlock
+            issue={issue}
+            longest={longestIssueStreak(issues ?? [])}
+            animate={justClosed === issue.closedAt}
+          />
+        </Suspense>
       )}
       <Composer today={today} rolloverHour={settings.dayRolloverHour} nextFolio={nextFolio} />
     </div>

@@ -1,11 +1,6 @@
-import { Component, type ReactNode } from "react";
+import { Component, lazy, type ReactNode, Suspense } from "react";
 import { createHashRouter, Outlet, useNavigate } from "react-router";
-import { BackIssues } from "../features/back-issues/BackIssues";
-import { FrozenIssue } from "../features/back-issues/FrozenIssue";
-import { ColophonPage } from "../features/colophon/ColophonPage";
 import { FrontPage } from "../features/front-page/FrontPage";
-import { Ledger } from "../features/ledger/Ledger";
-import { WeekSpread } from "../features/week-spread/WeekSpread";
 import { Providers } from "./providers";
 import { Shell } from "./Shell";
 
@@ -39,7 +34,18 @@ function Root() {
   );
 }
 
-const wrap = (el: ReactNode) => <RouteBoundary>{el}</RouteBoundary>;
+// The Front Page ships in the first chunk; every other surface is a lazy chunk.
+const WeekSpread = lazy(() => import("../features/week-spread/WeekSpread").then((m) => ({ default: m.WeekSpread })));
+const Ledger = lazy(() => import("../features/ledger/Ledger").then((m) => ({ default: m.Ledger })));
+const BackIssues = lazy(() => import("../features/back-issues/BackIssues").then((m) => ({ default: m.BackIssues })));
+const FrozenIssue = lazy(() => import("../features/back-issues/FrozenIssue").then((m) => ({ default: m.FrozenIssue })));
+const ColophonPage = lazy(() => import("../features/colophon/ColophonPage").then((m) => ({ default: m.ColophonPage })));
+
+const wrap = (el: ReactNode) => (
+  <RouteBoundary>
+    <Suspense fallback={<div className="page" aria-busy="true" />}>{el}</Suspense>
+  </RouteBoundary>
+);
 
 export const router = createHashRouter([
   {

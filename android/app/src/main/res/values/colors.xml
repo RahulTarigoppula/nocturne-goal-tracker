@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors src/styles/tokens.css (Night). -->
+    <color name="nocturne_bg">#0A1024</color>
+    <color name="nocturne_accent">#E8C170</color>
+    <color name="nocturne_ink">#EEF1F8</color>
+    <color name="nocturne_ink_muted">#9AA6C4</color>
+    <color name="colorPrimary">#0A1024</color>
+    <color name="colorPrimaryDark">#0A1024</color>
+    <color name="colorAccent">#E8C170</color>
+    <color name="ic_launcher_background">#0A1024</color>
+</resources>

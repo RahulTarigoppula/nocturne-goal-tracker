@@ -3,7 +3,6 @@ import { useNavigate } from "react-router";
 import { setStandfirst } from "../../data/repo";
 import { colophonLines } from "../../engine/colophon";
 import type { Issue } from "../../engine/types";
-import { shareIssue } from "./shareCard";
 
 interface Props {
   issue: Issue;
@@ -40,6 +39,7 @@ export function ColophonBlock({ issue, longest, animate, frozen }: Props) {
   const share = async () => {
     setShareState("busy");
     try {
+      const { shareIssue } = await import("./shareCard");
       await shareIssue(issue.dayKey);
       setShareState("idle");
     } catch {

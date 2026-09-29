@@ -1,0 +1,37 @@
+# Deploy Nocturne to GitHub Pages. Prereq: Settings → Pages → Source = "GitHub Actions".
+name: Deploy to GitHub Pages
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: false }
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx biome ci .
+      - run: npm run test:unit          # Vitest only; e2e lives in ci.yml
+      - name: Build (served from /<repo>/)
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+      - name: Bundle budget (initial JS ≤ 200 KB gzip)
+        run: node scripts/size-gate.mjs
+      - name: SPA fallback for deep links (harmless with hash routing)
+        run: cp dist/index.html dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with: { path: dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

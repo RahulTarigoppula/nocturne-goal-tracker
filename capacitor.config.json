@@ -1,0 +1,20 @@
+{
+  "appId": "com.rahul.nocturne",
+  "appName": "Nocturne",
+  "webDir": "dist",
+  "android": {
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#0A1024",
+      "launchFadeOutDuration": 0,
+      "androidScaleType": "CENTER",
+      "showSpinner": false,
+      "launchAutoHide": true
+    },
+    "LocalNotifications": { "smallIcon": "ic_stat_nocturne", "iconColor": "#E8C170" },
+    "Keyboard": { "resize": "none" }
+  }
+}
