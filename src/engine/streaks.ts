@@ -81,3 +81,22 @@ export function longestIssueStreak(issues: Pick<Issue, "dayKey" | "closedAt" | "
   }
   return best;
 }
+
+/** Best run of consecutive ISO weeks meeting the weekly target (the current week counts only once met). */
+export function bestWeekStreak(h: Pick<Habit, "frequency">, done: Set<DayKey>, today: DayKey): number {
+  const first = [...done].sort()[0];
+  if (!first) return 0;
+  let best = 0;
+  let run = 0;
+  for (let week = startOfWeek(first); week <= today; week = addDays(week, 7)) {
+    const met = countInRange(done, week, addDays(week, 6)) >= h.frequency.times;
+    run = met ? run + 1 : week === startOfWeek(today) ? run : 0;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+/** One freeze token per ISO week: available when none was spent this week. */
+export function freezeAvailable(frozen: Set<DayKey>, today: DayKey): boolean {
+  return countInRange(frozen, startOfWeek(today), addDays(startOfWeek(today), 6)) === 0;
+}

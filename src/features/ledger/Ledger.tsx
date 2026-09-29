@@ -5,7 +5,7 @@ import { StrengthRing } from "../../components/ui/StrengthRing";
 import { useCompletions, useHabits } from "../../data/queries";
 import { addHabit, toggleCompletion } from "../../data/repo";
 import { byOrder } from "../../engine/ordering";
-import { bestStreak, currentStreak } from "../../engine/streaks";
+import { bestStreak, bestWeekStreak, currentStreak, currentWeekStreak } from "../../engine/streaks";
 import { strength } from "../../engine/strength";
 import type { Completion, DayKey, Habit } from "../../engine/types";
 import { haptics } from "../../platform/haptics";
@@ -32,12 +32,13 @@ export function statsFor(habits: Habit[], completions: Completion[], today: DayK
   return habits.map((h) => {
     const { done, frozen } = by.get(h.id) ?? { done: new Set<DayKey>(), frozen: new Set<DayKey>() };
     const streakSet = new Set([...done, ...frozen]);
+    const weekly = h.frequency.per === "week";
     return {
       habit: h,
       done,
       frozen,
-      current: currentStreak(h, streakSet, today),
-      best: bestStreak(h, streakSet, today),
+      current: weekly ? currentWeekStreak(h, streakSet, today) : currentStreak(h, streakSet, today),
+      best: weekly ? bestWeekStreak(h, streakSet, today) : bestStreak(h, streakSet, today),
       strength: strength(h, done, frozen, today),
       doneToday: done.has(today),
     };
@@ -177,7 +178,7 @@ function LedgerLine({
       type="button"
       className={`ledger-line${archived ? " archived" : ""}${selected ? " selected" : ""}`}
       aria-pressed={s.doneToday}
-      aria-label={`${s.habit.title}. ${s.doneToday ? "Done today" : "Not done today"}. Streak ${s.current}, best ${s.best}, strength ${s.strength} %. ${archived ? "Archived." : "Tap to toggle today; hold or press E to edit."}`}
+      aria-label={`${s.habit.title}. ${s.doneToday ? "Done today" : "Not done today"}. Streak ${s.current}${s.habit.frequency.per === "week" ? " weeks" : ""}, best ${s.best}, strength ${s.strength} %. ${archived ? "Archived." : "Tap to toggle today; hold or press E to edit."}`}
       onPointerDown={(e) => {
         held.current = false;
         start.current = { x: e.clientX, y: e.clientY };

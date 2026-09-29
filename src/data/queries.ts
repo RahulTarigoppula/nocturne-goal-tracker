@@ -53,7 +53,9 @@ export function useHabits(): Habit[] | undefined {
 }
 
 export function useCompletions(): Completion[] | undefined {
-  return useLiveQuery(async () => (await db.completions.toArray()).filter((c) => !c.deletedAt && c.value > 0));
+  return useLiveQuery(async () =>
+    (await db.completions.toArray()).filter((c) => !c.deletedAt && (c.value > 0 || c.frozen)),
+  );
 }
 
 /** Days in a range that have at least one live entry (mini calendar dots). */

@@ -222,6 +222,13 @@ describe("habits", () => {
     expect((await db.habits.get(h.id))?.archivedAt).toBe(now);
     await repo.archiveHabit(h.id, false);
     expect((await db.habits.get(h.id))?.archivedAt).toBeUndefined();
+    await repo.freezeDay(h.id, k("2026-09-05"));
+    expect(await db.completions.get(`${h.id}:2026-09-05`)).toMatchObject({ value: 0, frozen: true });
+    await repo.freezeDay(h.id, k("2026-09-06"));
+    expect(await db.completions.get(`${h.id}:2026-09-06`)).toMatchObject({ value: 1 });
+    await repo.setFrequency(h.id, { times: 3, per: "week" });
+    expect((await db.habits.get(h.id))?.frequency).toEqual({ times: 3, per: "week" });
+    await repo.setFrequency("missing", { times: 1, per: "day" });
     await repo.deleteHabit(h.id);
     expect((await db.habits.get(h.id))?.deletedAt).toBe(now);
     await repo.updateHabit("missing", { title: "x" });

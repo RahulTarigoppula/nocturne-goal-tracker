@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./daykey";
-import { bestStreak, currentStreak, currentWeekStreak, issueStreak, longestIssueStreak } from "./streaks";
+import {
+  bestStreak,
+  bestWeekStreak,
+  currentStreak,
+  currentWeekStreak,
+  freezeAvailable,
+  issueStreak,
+  longestIssueStreak,
+} from "./streaks";
 import { multiplier, score, strength } from "./strength";
 import type { DayKey, Habit, Weekday } from "./types";
 
@@ -94,5 +102,26 @@ describe("issue streaks", () => {
     expect(
       longestIssueStreak([i("2026-09-01", true), i("2026-09-02", true), i("2026-09-03", false), i("2026-09-04", true)]),
     ).toBe(2);
+  });
+});
+
+describe("weekly habits and freezes", () => {
+  const h = { frequency: { times: 3, per: "week" as const } };
+  it("best week streak", () => {
+    const done = new Set(
+      ["2026-08-17", "2026-08-18", "2026-08-19", "2026-08-24", "2026-08-25", "2026-08-26", "2026-09-01"].map(k),
+    );
+    expect(bestWeekStreak(h, done, k("2026-09-06"))).toBe(2);
+    expect(bestWeekStreak(h, new Set(), k("2026-09-06"))).toBe(0);
+  });
+  it("one freeze per ISO week", () => {
+    expect(freezeAvailable(new Set(), k("2026-09-06"))).toBe(true);
+    expect(freezeAvailable(new Set([k("2026-09-01")]), k("2026-09-06"))).toBe(false);
+    expect(freezeAvailable(new Set([k("2026-08-30")]), k("2026-09-06"))).toBe(true);
+  });
+  it("a frozen day satisfies the streak walk", () => {
+    const done = new Set([k("2026-09-04"), k("2026-09-05")]);
+    const withFreeze = new Set([...done, k("2026-09-03")]);
+    expect(currentStreak(daily, withFreeze, k("2026-09-06"))).toBe(3);
   });
 });

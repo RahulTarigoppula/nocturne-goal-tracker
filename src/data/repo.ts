@@ -452,6 +452,32 @@ export async function toggleCompletion(habitId: Id, dayKey: DayKey): Promise<boo
   return done;
 }
 
+/** Spend this week's freeze token on a missed day: the streak survives, the strength score is untouched. */
+export async function freezeDay(habitId: Id, dayKey: DayKey): Promise<void> {
+  const now = clock.now();
+  await db.transaction("rw", db.completions, db.meta, async () => {
+    const id = `${habitId}:${dayKey}`;
+    const c = await db.completions.get(id);
+    if (c && !c.deletedAt && c.value > 0) return;
+    await db.completions.put({ id, habitId, dayKey, value: 0, frozen: true, ts: now, updatedAt: now });
+    await bumpRevision();
+  });
+  emit("habits");
+}
+
+export async function setFrequency(id: Id, frequency: Habit["frequency"]): Promise<void> {
+  const now = clock.now();
+  await db.transaction("rw", db.habits, db.meta, async () => {
+    const h = await db.habits.get(id);
+    if (!h) return;
+    const next: Habit = { ...h, frequency, updatedAt: now };
+    if (frequency.per === "week") delete next.scheduleDays;
+    await db.habits.put(next);
+    await bumpRevision();
+  });
+  emit("habits");
+}
+
 /* ------------------------------------------------------------------ issues & settings */
 
 export async function setStandfirst(dayKey: DayKey, text: string): Promise<void> {
