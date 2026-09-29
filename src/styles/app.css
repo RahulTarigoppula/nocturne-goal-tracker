@@ -999,7 +999,14 @@ textarea.field {
   font-weight: 200;
   font-size: var(--text-lg);
 }
-.sheet-head input {
+.sheet-head textarea {
+  resize: none;
+  field-sizing: content;
+  min-height: 1.15em;
+  overflow: hidden;
+}
+.sheet-head input,
+.sheet-head textarea {
   background: none;
   border: 0;
   outline: 0;
@@ -1009,7 +1016,8 @@ textarea.field {
   letter-spacing: inherit;
   color: var(--ink);
 }
-.sheet-head input:focus-visible {
+.sheet-head input:focus-visible,
+.sheet-head textarea:focus-visible {
   box-shadow: 0 1px 0 var(--accent);
 }
 .notes {
@@ -1530,6 +1538,19 @@ textarea.field {
   stroke-width: 1.5;
   color: var(--ink-muted);
   flex-shrink: 0;
+}
+
+.edition-note {
+  position: fixed;
+  left: var(--page-margin);
+  right: var(--page-margin);
+  bottom: calc(56px + var(--safe-bottom, 0px));
+  z-index: 20;
+  margin: 0;
+  padding: var(--space-2) 0;
+  background: var(--bg);
+  border-top: var(--hairline);
+  color: var(--accent);
 }
 
 /* ================================================================ quick find */

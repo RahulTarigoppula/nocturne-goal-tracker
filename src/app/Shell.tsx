@@ -123,6 +123,25 @@ function Rail() {
   );
 }
 
+/** "² A new edition is ready — Reload": the PWA never reloads itself. */
+function EditionFootnote() {
+  const [update, setUpdate] = useState<((reload?: boolean) => Promise<void>) | null>(null);
+  useEffect(() => {
+    const on = (e: Event) => setUpdate(() => (e as CustomEvent).detail);
+    window.addEventListener("nocturne:update", on);
+    return () => window.removeEventListener("nocturne:update", on);
+  }, []);
+  if (!update) return null;
+  return (
+    <p className="footnote edition-note" role="status">
+      ² A new edition is ready —{" "}
+      <button type="button" onClick={() => update(true)}>
+        Reload
+      </button>
+    </p>
+  );
+}
+
 export function Shell() {
   const settings = useEffectiveSettings();
   const today = useUi((s) => s.today);
@@ -172,6 +191,7 @@ export function Shell() {
         </div>
       </div>
       <SheetHost />
+      <EditionFootnote />
       <div className="sr-only" aria-live="polite" role="status">
         {announce}
       </div>

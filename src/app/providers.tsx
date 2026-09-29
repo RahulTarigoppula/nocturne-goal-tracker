@@ -84,7 +84,18 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
       }
     });
     syncSchedules().catch(() => {});
-    return off;
+    const backup = () => {
+      import("../data/autoBackup")
+        .then(async ({ maybeAutoBackup }) => maybeAutoBackup((await import("../platform/secrets")).loadToken))
+        .catch(() => {});
+    };
+    const t = window.setTimeout(backup, 10_000);
+    const iv = window.setInterval(backup, 30 * 60_000);
+    return () => {
+      off();
+      clearTimeout(t);
+      clearInterval(iv);
+    };
   }, []);
 
   // Platform hooks (resume, deep links, back button) and the audio unlock gesture.

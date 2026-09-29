@@ -266,12 +266,18 @@ function TitleField({ entry, onSave }: { entry: Entry; onSave: (t: string) => vo
   const [v, setV] = useState(entry.title);
   useDebounced(v, (t) => t.trim() && t !== entry.title && onSave(t));
   return (
-    <input
+    <textarea
       value={v}
+      rows={1}
       aria-label="Title"
-      onChange={(e) => setV(e.target.value)}
+      onChange={(e) => setV(e.target.value.replace(/\n/g, " "))}
       onBlur={() => v.trim() && v !== entry.title && onSave(v)}
-      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.target as HTMLTextAreaElement).blur();
+        }
+      }}
     />
   );
 }

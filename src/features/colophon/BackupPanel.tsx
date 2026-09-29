@@ -195,6 +195,14 @@ export function BackupPanel() {
             )}
             <button
               type="button"
+              className="btn-text"
+              aria-pressed={settings.backup.auto}
+              onClick={() => saveSettings({ backup: { ...settings.backup, auto: !settings.backup.auto } })}
+            >
+              {settings.backup.auto ? "Auto · on" : "Auto · off"}
+            </button>
+            <button
+              type="button"
               className="btn-text muted"
               onClick={async () => {
                 await forgetToken();
