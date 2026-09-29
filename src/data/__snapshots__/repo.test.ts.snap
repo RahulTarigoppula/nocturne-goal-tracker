@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`backup > export shape snapshot 1`] = `
+{
+  "entryKeys": [
+    "bucket",
+    "checklist",
+    "completedAt",
+    "createdAt",
+    "evening",
+    "id",
+    "notes",
+    "order",
+    "status",
+    "tags",
+    "title",
+    "updatedAt",
+    "when",
+  ],
+  "keys": [
+    "format",
+    "version",
+    "schema",
+    "app",
+    "revision",
+    "exportedAt",
+    "data",
+  ],
+  "tables": {
+    "completions": 1,
+    "entries": 3,
+    "habits": 1,
+    "issues": 1,
+    "settings": 1,
+  },
+}
+`;

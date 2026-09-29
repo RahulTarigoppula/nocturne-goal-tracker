@@ -1,0 +1,85 @@
+{
+  "reference": [2026, 8, 6, 10, 0],
+  "rows": [
+    {
+      "input": "call mom tomorrow 5pm",
+      "title": "call mom",
+      "when": "2026-09-07",
+      "time": "17:00",
+      "tags": [],
+      "evening": false
+    },
+    { "input": "renew passport fri", "title": "renew passport", "when": "2026-09-11", "tags": [], "evening": false },
+    {
+      "input": "gym every weekday #health",
+      "title": "gym",
+      "when": "2026-09-07",
+      "recurrence": { "kind": "weekdays", "mode": "fixed" },
+      "tags": ["health"],
+      "evening": false
+    },
+    {
+      "input": "water plants every 3 days",
+      "title": "water plants",
+      "when": "2026-09-06",
+      "recurrence": { "kind": "daily", "interval": 3, "mode": "fixed" },
+      "tags": [],
+      "evening": false
+    },
+    { "input": "read 20 pages tonight", "title": "read 20 pages", "when": "2026-09-06", "tags": [], "evening": true },
+    {
+      "input": "pay rent every month on the 1st",
+      "title": "pay rent",
+      "when": "2026-10-01",
+      "recurrence": { "kind": "monthly", "interval": 1, "day": 1, "mode": "fixed" },
+      "tags": [],
+      "evening": false
+    },
+    {
+      "input": "weekly review every monday 10:00",
+      "title": "weekly review",
+      "when": "2026-09-07",
+      "time": "10:00",
+      "recurrence": { "kind": "weekly", "interval": 1, "days": [1], "mode": "fixed" },
+      "tags": [],
+      "evening": false
+    },
+    { "input": "Buy 3 lemons", "title": "Buy 3 lemons", "tags": [], "evening": false },
+    { "input": "Meet at 5", "title": "Meet at 5", "tags": [], "evening": false },
+    { "input": "Draft README #work #writing", "title": "Draft README", "tags": ["work", "writing"], "evening": false },
+    { "input": "every", "title": "every", "tags": [], "evening": false },
+    { "input": "email@home and C# notes", "title": "email@home and C# notes", "tags": [], "evening": false },
+    {
+      "input": "file taxes by friday #admin",
+      "title": "file taxes",
+      "deadline": "2026-09-11",
+      "tags": ["admin"],
+      "evening": false
+    },
+    {
+      "input": "stretch every mon, wed and fri after done",
+      "title": "stretch",
+      "when": "2026-09-07",
+      "recurrence": { "kind": "weekly", "interval": 1, "days": [1, 3, 5], "mode": "afterCompletion" },
+      "tags": [],
+      "evening": false
+    },
+    {
+      "input": "clean the desk in 3 days #home",
+      "title": "clean the desk",
+      "when": "2026-09-09",
+      "tags": ["home"],
+      "evening": false
+    },
+    {
+      "input": "dentist fri 6pm",
+      "title": "dentist",
+      "when": "2026-09-11",
+      "time": "18:00",
+      "tags": [],
+      "evening": false
+    },
+    { "input": "stand by me", "title": "stand by me", "tags": [], "evening": false },
+    { "input": "tidy up today", "title": "tidy up", "when": "2026-09-06", "tags": [], "evening": false }
+  ]
+}

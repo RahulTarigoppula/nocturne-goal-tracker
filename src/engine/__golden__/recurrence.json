@@ -1,0 +1,75 @@
+[
+  {
+    "id": "R1",
+    "rule": { "kind": "daily", "interval": 1, "mode": "fixed" },
+    "base": "2026-09-06",
+    "expect": ["2026-09-07"]
+  },
+  {
+    "id": "R2",
+    "rule": { "kind": "weekdays", "mode": "fixed" },
+    "base": "2026-09-04",
+    "expect": ["2026-09-07", "2026-09-08"]
+  },
+  {
+    "id": "R3",
+    "rule": { "kind": "weekly", "interval": 1, "days": [1, 3, 5], "anchor": "2026-09-06", "mode": "fixed" },
+    "base": "2026-09-06",
+    "expect": ["2026-09-07", "2026-09-09"]
+  },
+  {
+    "id": "R4",
+    "rule": { "kind": "daily", "interval": 3, "mode": "fixed" },
+    "base": "2026-09-01",
+    "expect": ["2026-09-04", "2026-09-07"]
+  },
+  {
+    "id": "R5",
+    "rule": { "kind": "daily", "interval": 3, "mode": "afterCompletion" },
+    "base": "2026-09-06",
+    "expect": ["2026-09-09"]
+  },
+  {
+    "id": "R6",
+    "rule": { "kind": "monthly", "interval": 1, "day": 31, "mode": "fixed" },
+    "base": "2026-01-31",
+    "expect": ["2026-02-28", "2026-03-31", "2026-04-30"]
+  },
+  {
+    "id": "R7",
+    "rule": { "kind": "monthly", "interval": 1, "day": "last", "mode": "fixed" },
+    "base": "2026-02-28",
+    "expect": ["2026-03-31", "2026-04-30"]
+  },
+  {
+    "id": "R8",
+    "rule": { "kind": "yearly", "month": 2, "day": 29, "mode": "fixed" },
+    "base": "2024-02-29",
+    "expect": ["2025-02-28", "2026-02-28", "2027-02-28", "2028-02-29"]
+  },
+  {
+    "id": "R9",
+    "rule": { "kind": "weekly", "interval": 2, "days": [0], "anchor": "2026-09-06", "mode": "fixed" },
+    "base": "2026-09-06",
+    "expect": ["2026-09-20"]
+  },
+  {
+    "id": "R10",
+    "rule": { "kind": "weekly", "interval": 2, "days": [1, 4], "anchor": "2026-09-07", "mode": "fixed" },
+    "base": "2026-09-10",
+    "expect": ["2026-09-21"]
+  },
+  { "id": "R11", "rule": { "kind": "weekdays", "mode": "fixed" }, "base": "2026-10-23", "expect": ["2026-10-26"] },
+  {
+    "id": "R12",
+    "rule": { "kind": "daily", "interval": 1, "mode": "fixed" },
+    "base": "2026-03-28",
+    "expect": ["2026-03-29"]
+  },
+  {
+    "id": "R13",
+    "rule": { "kind": "weekly", "interval": 1, "days": [0], "anchor": "2026-09-07", "mode": "fixed" },
+    "base": "2026-09-07",
+    "expect": ["2026-09-13"]
+  }
+]

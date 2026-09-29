@@ -1,0 +1,1200 @@
+<!doctype html>
+<!--
+  NOCTURNE — "The Evening Edition" · design/preview.html
+  Visual contract for the app (DECISIONS.md D9.3). Self-contained: no build, no libraries,
+  fonts via Google Fonts <link> (production self-hosts via Fontsource — DESIGN.md §5).
+
+  SCREENS (in-app footer tabs / desktop rail; the preview bar mirrors them)
+    1. Front Page (Today)        — masthead, day-gauge rule, I — TODAY / II — THIS EVENING, composer,
+                                   Colophon end-state (strike every entry, or "Print colophon" in the bar)
+    2. Week Spread (Upcoming)    — vertical run of day-heads on phone, seven columns on desktop
+    3. The Ledger (Habits)       — streak · best, 24 px strength rings, 12-week heatmap, 96 px ring
+    4. Back Issues (Logbook)     — month heads, issue rows with standfirsts, weekly review heads
+    + Entry detail sheet (tap a title), When sheet (swipe left), Proof theme, Evening turn, phone/desktop frame
+
+  SIGNATURE INTERACTIONS IMPLEMENTED
+    · Masthead Roll — digits rise +1em → 0 in overflow-hidden columns, 30 ms stagger; No. and counter follow
+    · Ink Strike — tap the folio or swipe right past 90 px: SVG <line pathLength=1> draws L→R (320 ms),
+      title sinks to 40 %, folio → "—", meta gains "· closed HH:MM", entry re-sets to the foot of its
+      section (FLIP, 240 ms), counter digit-rolls, 5 s Undo foot with a shrinking foil rule
+    · Margin Words — drag x: "Done." / "When?" in Bricolage 200 track the drag; snap to foil at 90 px;
+      release before threshold springs back on the house spring (linear() easing)
+    · Folio Renumber — hold 250 ms: entry lifts (surface, radius 12, shadow-2, scale 1.02), drag vertically,
+      neighbours reflow and every folio re-rolls live
+    · The Colophon — last strike → contents fade to 40 %, foil rule draws, colophon typesets line by line,
+      standfirst input, "Share the issue" (the one filled button)
+    · Day Gauge — the hairline under the masthead is foil for the fraction of the day elapsed (03:00 rollover)
+    · Digit Roll, tab underline slide, sheet rise with 16 px blur scrim, Evening Turn (480 ms ground shift),
+      Ledger ring extend + streak roll, composer parsing chips, keyboard (j/k x w e n [ ] Esc), climbing
+      pentatonic scale (Web Audio, off by default). prefers-reduced-motion honoured throughout.
+-->
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1024">
+<title>Nocturne — The Evening Edition · preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Geist+Mono:wght@400..500&family=Geist:wght@400..600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   1. TOKENS — DESIGN.md §15, verbatim (Google Fonts family names appended to the stacks)
+   ============================================================ */
+:root {
+  --bg: #0A1024;
+  --bg-elevated: #0F172E;
+  --surface: #131C36;
+  --surface-2: #1A2542;
+  --ink: #EEF1F8;
+  --ink-muted: #9AA6C4;
+  --ink-faint: #5B6685;
+  --accent: #E8C170;
+  --accent-ink: #0A1024;
+  --accent-2: #EC6D58;
+  --success: #9CCBB0;
+  --warning: var(--accent);
+  --danger: var(--accent-2);
+  --border: #26304D;
+  --border-strong: #3A4666;
+  --focus: #F2D68A;
+
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Geist Variable", "Geist", system-ui, sans-serif;
+  --font-body: "Geist Variable", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-4xl: 4.5rem;
+  --text-5xl: clamp(5.5rem, 28vw, 7rem);
+  --leading-tight: 1.1;
+  --leading-body: 1.467;
+  --tracking-caps: 0.08em;
+  --tracking-mono: 0.04em;
+  --tracking-display: -0.03em;
+
+  --space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem;  --space-6: 1.5rem;   --space-7: 2rem;    --space-8: 2.5rem;
+  --space-9: 3rem;     --space-10: 4rem;    --space-11: 5rem;   --space-12: 6rem;
+  --page-margin: 1.25rem;
+  --folio-col: 2.25rem;
+  --row-min: 3.5rem;
+
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 20px; --radius-full: 999px;
+  --shadow-1: 0 1px 0 0 rgb(0 0 0 / 0.25);
+  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 -8px 40px rgb(0 0 0 / 0.5);
+  --hairline: 1px solid var(--border);
+  --grain-opacity: 0.035;
+  --sheet-scrim: rgb(15 23 46 / 0.72);
+  --sheet-blur: 16px;
+
+  --dur-fast: 120ms;
+  --dur-base: 240ms;
+  --dur-slow: 480ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: linear(0, 0.29, 0.62, 0.84, 0.95, 1);
+
+  --evening-hour: 21;
+  --day-gauge: 0;
+  --swipe-threshold: 90px;
+  --strike-width: 1px;
+  color-scheme: dark;
+
+  /* preview chrome only (outside the app's theme) */
+  --pv-bg: #05081A; --pv-ink: #9AA6C4; --pv-ink-strong: #EEF1F8; --pv-line: #182040; --pv-bezel: #2A3352;
+}
+:root[data-theme="proof"] {
+  --bg: #F5F1E8;
+  --bg-elevated: #ECE6D8;
+  --surface: #FBF9F3;
+  --surface-2: #E4DCCB;
+  --ink: #0A1024;
+  --ink-muted: #414B66;
+  --ink-faint: #8A93AB;
+  --accent: #745816;
+  --accent-ink: #F5F1E8;
+  --accent-2: #9E2F1C;
+  --success: #24634A;
+  --border: #D9D1BF;
+  --border-strong: #B8AE9B;
+  --focus: #6E5414;
+  --shadow-2: 0 1px 2px rgb(10 16 36 / 0.12), 0 10px 28px rgb(10 16 36 / 0.16);
+  --shadow-3: 0 -8px 40px rgb(10 16 36 / 0.18);
+  --sheet-scrim: rgb(236 230 216 / 0.78);
+  --grain-opacity: 0;
+  color-scheme: light;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 120ms; --dur-slow: 120ms; }
+}
+@media (prefers-reduced-transparency: reduce) { :root { --grain-opacity: 0; --sheet-blur: 0px; } }
+
+/* ============================================================
+   2. PREVIEW CHROME (bar + stage + device frame)
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--pv-bg); color: var(--pv-ink);
+  font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase;
+  display: flex; flex-direction: column; min-height: 100dvh; overflow-x: hidden;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.pv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; padding: 6px 20px; border-bottom: 1px solid var(--pv-line); }
+.pv-brand { color: var(--pv-ink-strong); margin-right: auto; padding: 12px 0; white-space: nowrap; }
+.pv-brand em { font-style: normal; color: var(--pv-ink); }
+.pv-group { display: flex; align-items: center; }
+.pv-group .lbl { opacity: .55; margin-right: 6px; }
+.pv-btn { background: none; border: 0; padding: 0 8px; height: 40px; cursor: pointer; position: relative; color: var(--pv-ink); }
+.pv-btn::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 9px; height: 1px; background: var(--pv-accent, #E8C170); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-base) var(--ease-in-out); }
+.pv-btn[aria-pressed="true"], .pv-btn[aria-selected="true"] { color: var(--pv-ink-strong); }
+.pv-btn[aria-pressed="true"]::after, .pv-btn[aria-selected="true"]::after { transform: scaleX(1); }
+.pv-btn:hover { color: var(--pv-ink-strong); }
+
+.stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; min-height: 0; }
+.device {
+  position: relative; overflow: hidden; background: var(--bg); color: var(--ink);
+  container: device / inline-size; transition: background-color var(--dur-slow) var(--ease-in-out);
+  text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-size: var(--text-base);
+}
+.device.evening { --bg: var(--bg-elevated); }
+.device[data-frame="phone"] {
+  width: 390px; height: min(844px, calc(100dvh - 128px)); min-height: 560px; border-radius: 44px; border: 1px solid var(--pv-bezel);
+  box-shadow: 0 40px 100px rgb(0 0 0 / .6), inset 0 0 0 1px rgb(255 255 255 / .04); --safe-top: 54px; --safe-bottom: 34px;
+}
+.device[data-frame="desktop"] { width: min(1280px, 100%); height: calc(100dvh - 128px); min-height: 640px; border-radius: 12px; border: 1px solid var(--pv-bezel); --safe-top: 0px; --safe-bottom: 0px; }
+.statusbar { position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; justify-content: space-between; align-items: center; padding: 8px 30px 0; z-index: 6; pointer-events: none; font: 500 var(--text-sm)/1 var(--font-mono); letter-spacing: var(--tracking-mono); }
+.statusbar .icons { display: flex; gap: 6px; align-items: center; }
+.statusbar svg { display: block; }
+.island { position: absolute; top: 12px; left: 50%; width: 118px; height: 34px; border-radius: 20px; background: #000; transform: translateX(-50%); z-index: 7; }
+.home-bar { position: absolute; bottom: 9px; left: 50%; width: 134px; height: 5px; border-radius: 3px; background: var(--ink); opacity: .9; transform: translateX(-50%); z-index: 6; }
+.device[data-frame="desktop"] .statusbar, .device[data-frame="desktop"] .island, .device[data-frame="desktop"] .home-bar { display: none; }
+
+@media (max-width: 480px) {
+  .pv-bar { padding: 2px 12px; gap: 0 12px; }
+  .pv-brand { padding: 8px 0; }
+  .stage { padding: 0; align-items: stretch; }
+  .device[data-frame="phone"] { width: 100%; height: auto; min-height: 0; flex: 1; border-radius: 0; border: 0; box-shadow: none; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
+  .statusbar, .island, .home-bar { display: none; }
+}
+@media (max-width: 1023px) { .pv-group.frame { display: none; } }
+
+/* grain: one SVG feTurbulence over the whole page, overlay, 0.035 (§4.3) */
+.grain { position: absolute; inset: 0; z-index: 20; pointer-events: none; opacity: var(--grain-opacity); mix-blend-mode: overlay; }
+
+/* ============================================================
+   3. APP SHELL
+   ============================================================ */
+.app { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.pages { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; padding: var(--safe-top) var(--page-margin) 0; }
+.page { display: none; padding-bottom: var(--space-6); }
+.page.active { display: block; }
+.page.fade { animation: pagefade var(--dur-base) var(--ease-in-out); }
+@keyframes pagefade { from { opacity: 0; } }
+
+/* Running heads — Geist Mono 500, 11 px, caps, +0.08em */
+.rh { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); line-height: 1.4; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); }
+.page-head { display: flex; justify-content: space-between; align-items: center; height: 40px; border-bottom: var(--hairline); margin-top: var(--space-3); }
+.section-head { display: flex; justify-content: space-between; align-items: center; height: 40px; border-bottom: var(--hairline); margin-top: var(--space-6); }
+.section-head.faint { color: var(--ink-faint); }
+
+/* Masthead (phone) */
+.masthead { padding-top: var(--space-3); }
+.masthead .page-head { margin-top: 0; border-bottom: 0; position: relative; }
+.masthead .rh-swap { position: relative; }
+.masthead .rh-swap span { transition: opacity var(--dur-base) var(--ease-in-out); }
+.masthead .rh-swap .ev { position: absolute; left: 0; top: 0; opacity: 0; white-space: nowrap; }
+.device.evening .rh-swap .ev { opacity: 1; }
+.device.evening .rh-swap .df { opacity: 0; }
+.gauge { height: 1px; background: var(--border); position: relative; }
+.gauge i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--day-gauge) * 100%); background: var(--accent); transition: width var(--dur-slow) var(--ease-out); }
+.date-block { display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-4); margin-top: var(--space-6); align-items: baseline; }
+.numeral { grid-row: 1 / 3; font-family: var(--font-display); font-weight: 300; font-size: var(--text-5xl); line-height: 1; letter-spacing: 0; font-optical-sizing: auto; font-variation-settings: "opsz" 96, "wdth" 100; font-variant-numeric: lining-nums tabular-nums; display: inline-flex; margin-left: -0.03em; }
+.numeral .col { display: block; width: .64em; height: 1em; overflow: hidden; text-align: center; margin-right: -.04em; }
+.numeral .col span { display: block; transform: translateY(1em); transition: transform var(--dur-slow) var(--ease-out); }
+.numeral.in .col span { transform: none; }
+.month { font-family: var(--font-display); font-weight: 200; font-size: var(--text-lg); line-height: 1.2; letter-spacing: -0.01em; font-variation-settings: "opsz" 24; align-self: end; }
+.greeting { font-family: var(--font-display); font-weight: 200; font-size: var(--text-lg); line-height: 1.2; letter-spacing: -0.01em; font-variation-settings: "opsz" 24; color: var(--ink); margin-top: var(--space-1); }
+.light-line { font-family: var(--font-display); font-weight: 200; font-size: var(--text-lg); line-height: 1.2; color: var(--ink); margin-top: var(--space-8); }
+.footnote-err { display: none; margin-top: var(--space-3); color: var(--accent-2); }
+
+/* Digit roll — 0–9 stack in a 1em window */
+.roll { display: inline-flex; line-height: 1; font-variant-numeric: tabular-nums; vertical-align: baseline; }
+.roll .dcol { display: inline-block; height: 1em; overflow: hidden; }
+.roll .dstack { display: block; transition: transform var(--dur-base) var(--ease-out); }
+.roll .dstack span { display: block; height: 1em; }
+.roll.pre .dstack { transform: translateY(1em) !important; }
+
+/* ============================================================
+   4. ENTRIES
+   ============================================================ */
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry { position: relative; border-bottom: var(--hairline); touch-action: pan-y; -webkit-user-select: none; user-select: none; outline-offset: -2px; }
+.entry-body {
+  position: relative; display: grid; grid-template-columns: var(--folio-col) 1fr; align-items: start;
+  min-height: var(--row-min); padding: var(--space-3) var(--space-2); margin: 0 calc(-1 * var(--space-2));
+  transition: background-color var(--dur-fast) var(--ease-out), border-radius var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.entry:hover .entry-body, .entry.selected .entry-body { background: var(--surface-2); }
+.entry.dragging .entry-body { background: var(--bg); }
+.entry.lifted { z-index: 3; }
+.entry.lifted .entry-body { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); }
+.entry.lifted { border-bottom-color: transparent; }
+.folio { display: flex; align-items: flex-start; width: 44px; height: 44px; margin: -8px 0 -10px -8px; padding: 12px 0 0 8px; background: none; border: 0; cursor: pointer; font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-mono); color: var(--ink-muted); text-transform: none; }
+.entry.done .folio { color: var(--ink-faint); cursor: default; }
+.entry-main { min-width: 0; }
+.title { display: block; width: 100%; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer; font-family: var(--font-body); font-weight: 500; font-size: var(--text-md); line-height: 24px; letter-spacing: -0.005em; color: var(--ink); text-transform: none; }
+.title-text { position: relative; display: inline; transition: opacity var(--dur-base) var(--ease-out); }
+.entry.done .title-text { opacity: .4; }
+.strike { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.strike line { stroke: var(--accent); stroke-width: var(--strike-width); vector-effect: non-scaling-stroke; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.entry.done .strike line { stroke-dashoffset: 0; }
+.meta { margin-top: 2px; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.4; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta .over { color: var(--accent-2); }
+.meta .closed:empty { display: none; }
+.meta .sep { margin: 0 .35em; }
+/* margin words */
+.mw { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-weight: 200; font-size: var(--text-lg); letter-spacing: -0.01em; color: var(--ink-muted); opacity: 0; pointer-events: none; transition: color var(--dur-fast); white-space: nowrap; }
+.mw-left { left: 0; } .mw-right { right: 0; }
+.mw.armed { color: var(--accent); }
+/* compact rows (Upcoming) */
+.entry.compact .entry-body { min-height: 44px; padding-top: 10px; padding-bottom: 10px; grid-template-columns: var(--folio-col) 1fr auto; column-gap: var(--space-3); }
+.entry.compact .folio { height: 40px; padding-top: 10px; }
+.entry.compact .title { font-size: var(--text-base); line-height: 22px; cursor: default; }
+.entry.compact .tail { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); line-height: 22px; }
+.entry.compact .tail.over { color: var(--accent-2); }
+
+/* Composer */
+.composer { margin-top: var(--space-7); }
+.composer-row { display: grid; grid-template-columns: var(--folio-col) 1fr auto; align-items: center; border-bottom: 1px solid var(--border-strong); transition: border-color var(--dur-fast); }
+.composer:focus-within .composer-row { border-color: var(--accent); }
+.composer .plus { font-family: var(--font-display); font-weight: 400; font-size: var(--text-xl); line-height: 1; font-variation-settings: "opsz" 32; color: var(--ink-muted); }
+.composer .plus.folio-preview { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-mono); }
+.composer input { background: none; border: 0; outline: 0; width: 100%; min-height: 48px; padding: var(--space-3) 0; font-family: var(--font-body); font-weight: 500; font-size: var(--text-md); line-height: 24px; color: var(--ink); }
+.composer input::placeholder { color: var(--ink-muted); font-weight: 400; }
+.composer:focus-within input::placeholder { color: var(--ink-faint); }
+.composer .find { display: none; font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-mono); color: var(--ink-muted); padding-left: var(--space-3); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.chips:empty { display: none; }
+.chip { height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-mono); text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; position: relative; }
+.chip::before { content: ""; position: absolute; inset: -6px 0; }
+.chip.off { background: none; color: var(--ink-muted); text-decoration: line-through; }
+.hint { margin-top: var(--space-2); min-height: 20px; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.4; letter-spacing: var(--tracking-mono); color: var(--ink-muted); position: relative; }
+.hint .undo-btn { background: none; border: 0; padding: 0; height: 32px; color: var(--ink); cursor: pointer; font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-mono); text-transform: none; }
+.hint .undo-btn u { color: var(--accent); text-decoration: none; }
+.hint .undo-rule { position: absolute; left: 0; bottom: 0; height: 1px; width: 100%; background: var(--accent); transform-origin: left; animation: undoShrink 5s linear forwards; }
+@keyframes undoShrink { to { transform: scaleX(0); } }
+
+/* Colophon */
+.issue-body { transition: opacity var(--dur-base) var(--ease-out); }
+.page.closed .issue-body { opacity: .4; }
+.colophon { display: none; margin-top: var(--space-8); }
+.page.closed .colophon { display: block; }
+.colophon .rule { height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-slow) var(--ease-out) 240ms; }
+.colophon.in .rule { transform: none; }
+.colophon .cl { opacity: 0; transform: translateY(6px); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.colophon.in .cl { opacity: 1; transform: none; }
+.colophon .cl:nth-of-type(1) { transition-delay: 720ms; } .colophon .cl:nth-of-type(2) { transition-delay: 780ms; }
+.colophon .cl:nth-of-type(3) { transition-delay: 840ms; } .colophon .cl:nth-of-type(4) { transition-delay: 900ms; }
+.colophon .cl:nth-of-type(5) { transition-delay: 960ms; } .colophon .cl:nth-of-type(6) { transition-delay: 1020ms; }
+.colophon .no { font-family: var(--font-display); font-weight: 300; font-size: var(--text-3xl); line-height: 1; letter-spacing: -0.02em; font-variation-settings: "opsz" 48; margin-top: var(--space-6); }
+.colophon .no .roll { font-variant-numeric: lining-nums tabular-nums; }
+.colophon .l { font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.6; letter-spacing: var(--tracking-mono); color: var(--ink); margin-top: var(--space-2); }
+.colophon .l .m { color: var(--ink-muted); }
+.standfirst { margin-top: var(--space-6); border-bottom: 1px solid var(--border-strong); transition: border-color var(--dur-fast); }
+.standfirst:focus-within { border-color: var(--accent); }
+.standfirst input { width: 100%; background: none; border: 0; outline: 0; min-height: 44px; font-family: var(--font-display); font-weight: 200; font-size: var(--text-base); line-height: 22px; color: var(--ink); }
+.standfirst input::placeholder { color: var(--ink-muted); }
+.colophon-actions { display: flex; gap: var(--space-4); align-items: center; margin-top: var(--space-6); }
+.btn-fill { height: 44px; padding: 0 var(--space-5); border: 0; border-radius: var(--radius-md); background: var(--accent); color: var(--accent-ink); font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); letter-spacing: var(--tracking-mono); text-transform: uppercase; cursor: pointer; transition: transform var(--dur-fast); }
+.btn-fill:active { transform: translateY(1px); }
+.btn-text { height: 44px; padding: 0 var(--space-2); margin: 0 calc(-1 * var(--space-2)); border: 0; background: none; color: var(--ink); font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); letter-spacing: var(--tracking-mono); text-transform: uppercase; cursor: pointer; border-radius: var(--radius-sm); transition: background-color var(--dur-fast); }
+.btn-text:hover { background: var(--surface-2); }
+.btn-text:active { transform: translateY(1px); }
+.btn-text.danger { color: var(--accent-2); }
+
+/* Footer tabs (phone) */
+.tabs { position: relative; display: flex; flex-shrink: 0; height: calc(48px + var(--safe-bottom)); padding: 0 var(--page-margin) var(--safe-bottom); border-top: var(--hairline); background: var(--bg); transition: background-color var(--dur-slow) var(--ease-in-out); }
+.tab { flex: 1; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); display: flex; align-items: center; justify-content: center; }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab-underline { position: absolute; left: 0; bottom: calc(var(--safe-bottom) + 8px); height: 1px; width: 40px; background: var(--accent); transform-origin: left; transition: transform var(--dur-base) var(--ease-in-out), width var(--dur-base) var(--ease-in-out); }
+
+/* ============================================================
+   5. SHEETS
+   ============================================================ */
+.scrim { position: absolute; inset: 0; z-index: 30; background: var(--sheet-scrim); -webkit-backdrop-filter: blur(var(--sheet-blur)) saturate(1.2); backdrop-filter: blur(var(--sheet-blur)) saturate(1.2); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out); }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 31; height: 92%; display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: thin; background: var(--surface); color: var(--ink); border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-3); padding: var(--space-2) var(--page-margin) calc(var(--space-6) + var(--safe-bottom)); transform: translateY(100%); transition: transform var(--dur-base) var(--ease-out); }
+.sheet.when { height: auto; }
+.sheet.open { transform: none; }
+.sheet > * { opacity: 0; transition: opacity var(--dur-base) var(--ease-out); }
+.sheet.open > * { opacity: 1; }
+.sheet.open > :nth-child(2) { transition-delay: 20ms; } .sheet.open > :nth-child(3) { transition-delay: 40ms; }
+.sheet.open > :nth-child(4) { transition-delay: 60ms; } .sheet.open > :nth-child(5) { transition-delay: 80ms; }
+.sheet.open > :nth-child(6) { transition-delay: 100ms; } .sheet.open > :nth-child(n+7) { transition-delay: 120ms; }
+.grabber { flex-shrink: 0; width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: var(--space-2) auto var(--space-5); cursor: grab; touch-action: none; }
+.sheet-head { display: grid; grid-template-columns: var(--folio-col) 1fr; align-items: baseline; font-family: var(--font-display); font-weight: 400; font-size: var(--text-xl); line-height: 1.15; letter-spacing: -0.015em; font-variation-settings: "opsz" 32; }
+.sheet-head .f { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); letter-spacing: var(--tracking-mono); color: var(--ink-muted); }
+.sheet-head.light { font-weight: 200; font-size: var(--text-lg); }
+.notes { margin: var(--space-4) 0 0 var(--folio-col); font-family: var(--font-body); font-weight: 400; font-size: var(--text-base); line-height: 22px; color: var(--ink); }
+.checklist { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+.checklist li { display: grid; grid-template-columns: var(--folio-col) auto 1fr; align-items: center; min-height: 44px; column-gap: var(--space-3); font-family: var(--font-body); font-size: var(--text-base); }
+.checklist .f { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-mono); color: var(--ink-muted); }
+.checklist .box { width: 14px; height: 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); display: grid; place-items: center; }
+.checklist .box.on::after { content: ""; width: 6px; height: 6px; background: var(--accent); border-radius: 1px; }
+.checklist .on + span { opacity: .4; }
+.mono-table { margin-top: var(--space-4); border-top: 1px solid var(--border-strong); }
+.mono-table .r { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; min-height: 44px; border-bottom: var(--hairline); font-family: var(--font-mono); font-size: var(--text-sm); letter-spacing: var(--tracking-mono); cursor: pointer; }
+.mono-table .r:hover { background: var(--surface-2); margin: 0 calc(-1 * var(--space-2)); padding: 0 var(--space-2); }
+.mono-table .k { font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); }
+.mono-table .v { color: var(--ink); }
+.mono-table .v sup { color: var(--accent); }
+.mono-table .chev { color: var(--ink-muted); padding-left: var(--space-3); }
+.footnote { margin-top: var(--space-3); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; letter-spacing: var(--tracking-mono); color: var(--accent); }
+.sheet-actions { margin-top: auto; padding-top: var(--space-6); display: flex; justify-content: space-between; }
+.when-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border-strong); }
+.when-list button { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; min-height: 48px; background: none; border: 0; border-bottom: var(--hairline); padding: 0; text-align: left; cursor: pointer; font-family: var(--font-body); font-weight: 500; font-size: var(--text-md); color: var(--ink); }
+.when-list button:hover { background: var(--surface-2); }
+.when-list button small { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); }
+
+/* ============================================================
+   6. WEEK SPREAD · LEDGER · BACK ISSUES
+   ============================================================ */
+.day { margin-top: var(--space-6); }
+.day-head { display: flex; align-items: baseline; gap: var(--space-3); height: 56px; border-bottom: var(--hairline); }
+.day-head .dn { font-family: var(--font-display); font-weight: 300; font-size: var(--text-2xl); line-height: 1; letter-spacing: -0.02em; font-variation-settings: "opsz" 36; font-variant-numeric: lining-nums tabular-nums; }
+.day-head .cnt { margin-left: auto; }
+.day-head .cnt.over { color: var(--accent-2); }
+.day-empty { display: grid; grid-template-columns: var(--folio-col) 1fr; min-height: 44px; align-items: center; color: var(--ink-faint); font-family: var(--font-mono); font-size: var(--text-xs); }
+
+.ledger-line { display: grid; grid-template-columns: 1fr auto 24px; column-gap: var(--space-4); align-items: center; min-height: var(--row-min); border-bottom: var(--hairline); width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; padding: 0; text-align: left; cursor: pointer; color: var(--ink); font-family: var(--font-body); font-weight: 500; font-size: var(--text-md); transition: background-color var(--dur-fast); }
+.ledger-line:hover { background: var(--surface-2); }
+.ledger-line .st { font-family: var(--font-mono); font-size: var(--text-sm); letter-spacing: var(--tracking-mono); color: var(--ink-muted); display: inline-flex; gap: .5em; }
+.ledger-line .st .roll { color: var(--ink); }
+.ledger-line.archived { color: var(--ink-faint); }
+.ledger-line.archived .st, .ledger-line.archived .st .roll { color: var(--ink-faint); }
+.ring { width: 24px; height: 24px; display: block; }
+.ring .track { fill: none; stroke: var(--surface-2); stroke-width: 1; }
+.ring .arc { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset var(--dur-base) var(--ease-out); transform: rotate(-90deg); transform-origin: center; }
+.ledger-detail { margin-top: var(--space-6); display: grid; grid-template-columns: 1fr 96px; column-gap: var(--space-6); align-items: center; }
+.heat { width: 100%; height: auto; display: block; margin-top: var(--space-3); }
+.heat .dot { fill: var(--accent); }
+.heat .miss { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+.heat .tod { fill: var(--ink); font-family: var(--font-mono); font-size: 7px; font-weight: 500; letter-spacing: .04em; }
+.big-ring { position: relative; width: 96px; height: 96px; }
+.big-ring .ring { width: 96px; height: 96px; }
+.big-ring .ring .track { stroke-width: .5; }
+.big-ring .ring .arc { stroke-width: .75; }
+.big-ring .pct { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 300; font-size: var(--text-2xl); letter-spacing: -0.02em; font-variation-settings: "opsz" 36; }
+.big-ring .pct small { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps); color: var(--ink-muted); margin-left: .2em; }
+.strength-word { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); text-align: center; margin-top: var(--space-2); }
+
+.month-head { font-family: var(--font-display); font-weight: 300; font-size: var(--text-3xl); line-height: 1; letter-spacing: -0.02em; font-variation-settings: "opsz" 48; padding: var(--space-6) 0 var(--space-3); border-bottom: var(--hairline); margin-top: var(--space-2); }
+.issue-row { display: block; width: 100%; background: none; border: 0; border-bottom: var(--hairline); padding: var(--space-3) 0; min-height: var(--row-min); text-align: left; cursor: pointer; color: var(--ink); transition: background-color var(--dur-fast); }
+.issue-row:hover { background: var(--surface-2); }
+.issue-row .im { font-family: var(--font-mono); font-size: var(--text-sm); letter-spacing: var(--tracking-mono); line-height: 1.4; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.issue-row.open .im { color: var(--ink-muted); }
+.issue-row .sf { font-family: var(--font-display); font-weight: 200; font-size: var(--text-base); line-height: 22px; color: var(--ink); margin-top: 2px; }
+.week-head { height: 40px; display: flex; align-items: center; border-bottom: var(--hairline); margin-top: var(--space-4); }
+
+/* ============================================================
+   7. DESKTOP (≥ 900 px container): rail + 640 px reading column + margin
+   ============================================================ */
+.rail { display: none; }
+.margin-caption { display: none; }
+@container device (min-width: 900px) {
+  .app { flex-direction: row; }
+  .rail { display: flex; flex-direction: column; width: 320px; flex-shrink: 0; padding: var(--space-7) var(--space-7) var(--space-6); border-right: var(--hairline); }
+  .rail .rh { display: flex; justify-content: space-between; }
+  .rail .numeral { font-size: var(--text-4xl); line-height: .95; font-variation-settings: "opsz" 72, "wdth" 100; margin-top: var(--space-6); }
+  .rail .month { margin-top: var(--space-1); display: block; }
+  .rail .gauge { margin-top: var(--space-4); }
+  .cal { margin-top: var(--space-6); display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 6px; font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-mono); text-align: center; color: var(--ink-muted); }
+  .cal .h { color: var(--ink-faint); font-weight: 500; }
+  .cal .d { position: relative; height: 26px; display: grid; place-items: center; }
+  .cal .d.today { color: var(--ink); }
+  .cal .d.today::before { content: ""; position: absolute; width: 24px; height: 24px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); }
+  .cal .d.dot::after { content: ""; position: absolute; bottom: -2px; width: 3px; height: 3px; border-radius: var(--radius-full); background: var(--accent); }
+  .cal .d.past { color: var(--ink-faint); }
+  .rail-nav { margin-top: auto; display: flex; flex-direction: column; padding-top: var(--space-6); }
+  .rail-nav button { height: 44px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); }
+  .rail-nav button[aria-selected="true"] { color: var(--ink); }
+  .rail-nav button span { position: relative; display: inline-block; }
+  .rail-nav button span::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-base) var(--ease-in-out); }
+  .rail-nav button[aria-selected="true"] span::after { transform: scaleX(1); }
+  .pages { padding: var(--space-7) var(--space-7) 0; position: relative; }
+  .page { max-width: 640px; }
+  .page.wide { max-width: none; padding-right: 72px; }
+  .masthead, .page-head.phone, .tabs { display: none; }
+  .composer .find { display: block; }
+  .margin-caption { display: block; position: absolute; right: var(--space-6); top: var(--space-7); bottom: var(--space-7); writing-mode: vertical-rl; font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-muted); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to bottom, transparent, #000 40px, #000 calc(100% - 40px), transparent); pointer-events: none; }
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: var(--space-4); border-top: var(--hairline); margin-top: var(--space-3); }
+  .week .day { margin-top: 0; }
+  .week .entry.compact .entry-body { grid-template-columns: 1fr; padding-left: 0; padding-right: 0; margin: 0; }
+  .week .entry.compact .folio { display: none; }
+  .week .entry.compact .title { font-size: var(--text-sm); line-height: 20px; }
+  .week .entry.compact .tail { line-height: 16px; }
+  .week .day-empty { grid-template-columns: 1fr; }
+  .sheet { left: 50%; top: 50%; right: auto; bottom: auto; width: 560px; height: auto; max-height: 86%; border-radius: var(--radius-lg); padding-bottom: var(--space-6); transform: translate(-50%, -50%) translateY(8px); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out); }
+  .sheet.open { transform: translate(-50%, -50%); opacity: 1; }
+  .scrim { --sheet-scrim: rgb(10 16 36 / 0.4); }
+  :root[data-theme="proof"] .scrim { --sheet-scrim: rgb(236 230 216 / 0.5); }
+}
+
+/* ============================================================
+   8. REDUCED MOTION (§7.2)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .numeral .col span { transform: none; opacity: 0; transition: opacity 120ms; }
+  .numeral.in .col span { opacity: 1; }
+  .roll .dstack { transition: none; }
+  .strike line { transition: none !important; }
+  .entry.lifted .entry-body { background: var(--surface-2); border-radius: 0; box-shadow: none; }
+  .sheet { transform: none; opacity: 0; transition: opacity 120ms; }
+  .sheet.open { opacity: 1; }
+  .colophon .rule { transition: none; }
+  .colophon .cl { transition-delay: 0ms !important; }
+  .gauge i { transition: none; }
+  .page.fade { animation: none; }
+  .hint .undo-rule { animation-duration: 5s; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ PREVIEW BAR ============================ -->
+<header class="pv-bar" role="toolbar" aria-label="Preview controls">
+  <div class="pv-brand">Nocturne <em>· The Evening Edition · design preview</em></div>
+  <div class="pv-group" id="pv-screens" role="tablist" aria-label="Screens">
+    <span class="lbl">Screen</span>
+    <button class="pv-btn" role="tab" data-page="today" aria-selected="true">Front page</button>
+    <button class="pv-btn" role="tab" data-page="upcoming" aria-selected="false">Week spread</button>
+    <button class="pv-btn" role="tab" data-page="ledger" aria-selected="false">Ledger</button>
+    <button class="pv-btn" role="tab" data-page="issues" aria-selected="false">Back issues</button>
+  </div>
+  <div class="pv-group" id="pv-theme">
+    <span class="lbl">Theme</span>
+    <button class="pv-btn" data-theme="night" aria-pressed="true">Night</button>
+    <button class="pv-btn" data-theme="proof" aria-pressed="false">Proof</button>
+  </div>
+  <div class="pv-group">
+    <button class="pv-btn" id="pv-evening" aria-pressed="false">Evening</button>
+    <button class="pv-btn" id="pv-sound" aria-pressed="false">Sound off</button>
+    <button class="pv-btn" id="pv-colophon">Print colophon</button>
+    <button class="pv-btn" id="pv-reset">Reset issue</button>
+  </div>
+  <div class="pv-group frame" id="pv-frame">
+    <span class="lbl">Frame</span>
+    <button class="pv-btn" data-frame="phone" aria-pressed="true">Phone</button>
+    <button class="pv-btn" data-frame="desktop" aria-pressed="false">Desktop</button>
+  </div>
+</header>
+
+<!-- ============================ STAGE ============================ -->
+<main class="stage">
+<div class="device" id="device" data-frame="phone">
+  <div class="island" aria-hidden="true"></div>
+  <div class="statusbar" aria-hidden="true">
+    <span id="sb-time">21:14</span>
+    <span class="icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".5"/><rect x="5" y="5.5" width="3" height="6.5" rx=".5"/><rect x="10" y="3" width="3" height="9" rx=".5"/><rect x="15" y="0" width="3" height="12" rx=".5"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1.5 4.2a9.5 9.5 0 0 1 13 0"/><path d="M4 7a6 6 0 0 1 8 0"/><path d="M6.5 9.6a2.5 2.5 0 0 1 3 0"/></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="17" height="9" rx="1.5" fill="currentColor"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".5"/></svg>
+    </span>
+  </div>
+  <div class="home-bar" aria-hidden="true"></div>
+
+  <svg class="grain" aria-hidden="true" width="100%" height="100%">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"/>
+  </svg>
+
+  <div class="app" id="app">
+    <!-- Desktop rail -->
+    <aside class="rail" aria-label="Masthead">
+      <div class="rh"><span>Nocturne</span><span>No. <span class="roll" data-roll="issue"></span></span></div>
+      <div class="numeral" data-numeral aria-hidden="true"></div>
+      <span class="month" data-month></span>
+      <div class="gauge" role="progressbar" aria-label="Day elapsed"><i></i></div>
+      <div class="cal" id="cal" aria-label="September"></div>
+      <nav class="rail-nav" aria-label="Sections">
+        <button data-page="today" aria-selected="true"><span>Today</span></button>
+        <button data-page="upcoming" aria-selected="false"><span>Upcoming</span></button>
+        <button data-page="ledger" aria-selected="false"><span>Ledger</span></button>
+        <button data-page="issues" aria-selected="false"><span>Issues</span></button>
+      </nav>
+    </aside>
+
+    <div class="pages" id="pages">
+      <!-- ================= 1. FRONT PAGE ================= -->
+      <section class="page active" id="page-today" aria-label="Front page">
+        <header class="masthead">
+          <div class="page-head rh">
+            <span class="rh-swap"><span class="df">Nocturne · No. <span class="roll" data-roll="issue"></span> · <span data-weekday></span></span><span class="ev">Evening edition · No. <span class="roll" data-roll="issue"></span></span></span>
+            <span><span class="roll" data-roll="counter" aria-hidden="true"></span><span class="sr-only" id="counter-sr"></span></span>
+          </div>
+          <div class="gauge" role="progressbar" aria-label="Day elapsed" id="gauge"><i></i></div>
+          <div class="date-block">
+            <div class="numeral" data-numeral aria-hidden="true"></div>
+            <span class="month" data-month></span>
+            <div class="greeting" id="greeting">Good evening, Rahul.</div>
+          </div>
+          <p class="footnote-err rh" id="storage-note">¹ Storage is unavailable in this browser; the issue will not be saved.</p>
+        </header>
+        <div class="page-head phone rh" style="display:none"></div>
+
+        <div class="issue-body" id="issue-body">
+          <div class="light-line" id="empty-today" hidden>Nothing set for today.</div>
+          <div id="sec-today">
+            <div class="section-head rh"><span>I — Today</span></div>
+            <ul class="entries" id="list-today" aria-label="Today"></ul>
+          </div>
+          <div id="sec-evening">
+            <div class="section-head rh"><span>II — This evening</span></div>
+            <ul class="entries" id="list-evening" aria-label="This evening"></ul>
+          </div>
+        </div>
+
+        <div class="colophon" id="colophon" aria-live="polite">
+          <div class="rule"></div>
+          <div class="cl no">Issue No. <span class="roll" data-roll="issue"></span></div>
+          <div class="cl l">Closed at <span id="col-time">21:14</span>. <span id="col-count">Seven entries.</span></div>
+          <div class="cl l">Streak <span class="roll" id="col-streak"></span> days. Longest 31.</div>
+          <div class="cl l m">Set in Bricolage Grotesque &amp; Geist.</div>
+          <div class="cl standfirst"><input id="standfirst" type="text" placeholder="A line for the record —" aria-label="Standfirst for the record" autocomplete="off"></div>
+          <div class="cl colophon-actions"><button class="btn-fill" id="share-btn">Share the issue</button><button class="btn-text" id="tomorrow-btn">Set tomorrow</button></div>
+        </div>
+
+        <form class="composer" id="composer" autocomplete="off">
+          <div class="composer-row">
+            <span class="plus" id="plus" aria-hidden="true">+</span>
+            <input id="compose" type="text" placeholder="Add to the issue…" aria-label="Add to the issue" enterkeyhint="done">
+            <span class="find">⌘K Find</span>
+          </div>
+          <div class="chips" id="chips" aria-label="Understood spans"></div>
+          <div class="hint" id="hint">Enter to file · Shift+Enter for this evening</div>
+        </form>
+      </section>
+
+      <!-- ================= 2. WEEK SPREAD ================= -->
+      <section class="page wide" id="page-upcoming" aria-label="Week spread">
+        <div class="page-head phone rh"><span>Nocturne · Upcoming</span><span>7 days</span></div>
+        <div class="week" id="week"></div>
+      </section>
+
+      <!-- ================= 3. THE LEDGER ================= -->
+      <section class="page" id="page-ledger" aria-label="The ledger">
+        <div class="page-head phone rh"><span>Nocturne · Ledger</span><span>4 habits</span></div>
+        <div id="ledger"></div>
+        <div class="section-head rh" style="margin-top: var(--space-8)"><span>12 weeks · <span id="heat-name">Morning pages</span></span><span id="heat-hint">tap a line to close today</span></div>
+        <div class="ledger-detail">
+          <div><svg class="heat" id="heat" viewBox="0 0 168 100" aria-label="12-week completion grid"></svg></div>
+          <div>
+            <div class="big-ring"><svg class="ring" viewBox="0 0 24 24"><circle class="track" cx="12" cy="12" r="11"/><circle class="arc" id="big-arc" cx="12" cy="12" r="11" pathLength="100"/></svg><div class="pct"><span class="roll" id="big-pct"></span><small>%</small></div></div>
+            <div class="strength-word">strength</div>
+          </div>
+        </div>
+        <div class="section-head rh faint"><span>Archived</span></div>
+        <div id="ledger-archived"></div>
+        <div class="composer" style="margin-top: var(--space-6)"><div class="composer-row"><span class="plus" aria-hidden="true">+</span><input type="text" placeholder="Add a habit…" aria-label="Add a habit"></div></div>
+      </section>
+
+      <!-- ================= 4. BACK ISSUES ================= -->
+      <section class="page" id="page-issues" aria-label="Back issues">
+        <div class="page-head phone rh"><span>Nocturne · Back issues</span><span>10 issues</span></div>
+        <div id="issues"></div>
+      </section>
+    </div>
+
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-page="today" aria-selected="true">Today</button>
+      <button class="tab" role="tab" data-page="upcoming" aria-selected="false">Upcoming</button>
+      <button class="tab" role="tab" data-page="ledger" aria-selected="false">Ledger</button>
+      <button class="tab" role="tab" data-page="issues" aria-selected="false">Issues</button>
+      <i class="tab-underline" id="tab-underline" aria-hidden="true"></i>
+    </nav>
+    <div class="margin-caption" id="margin-caption">Evening Edition · 21:00 · Sunday 06 September 2026</div>
+  </div>
+
+  <!-- ================= SHEETS ================= -->
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet-entry" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+    <div class="grabber" data-close aria-hidden="true"></div>
+    <div class="sheet-head"><span class="f" id="sheet-folio">02</span><span id="sheet-title">Draft the Nocturne README</span></div>
+    <p class="notes" id="sheet-notes"></p>
+    <ul class="checklist" id="sheet-check"></ul>
+    <div class="mono-table" id="sheet-table"></div>
+    <p class="footnote" id="sheet-foot"></p>
+    <div class="sheet-actions"><button class="btn-text" data-close>Move to Someday</button><button class="btn-text danger" data-close>Delete the entry</button></div>
+  </div>
+  <div class="sheet when" id="sheet-when" role="dialog" aria-modal="true" aria-label="When?" tabindex="-1">
+    <div class="grabber" data-close aria-hidden="true"></div>
+    <div class="sheet-head light"><span class="f" id="when-folio">03</span><span>When?</span></div>
+    <ul class="when-list" id="when-list">
+      <li><button data-when="today">Today <small>Section I</small></button></li>
+      <li><button data-when="evening">This evening <small>Section II · 21:00</small></button></li>
+      <li><button data-when="tomorrow">Tomorrow <small id="when-tomorrow">Sun 07</small></button></li>
+      <li><button data-when="weekend">This weekend <small>Sat · Sun</small></button></li>
+      <li><button data-when="someday">Someday <small>No date</small></button></li>
+    </ul>
+  </div>
+</div>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const rm = () => reduced.matches;
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hhmm = (d = now) => pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WD3 = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+
+/* ---------- the day: FROZEN at the house fixture, with a 03:00 rollover ----------
+   The visual contract is judged against 2026-09-06T21:14 (a Sunday, Issue No. 249,
+   gauge 0.7597 → 76 % foil), the same instant Playwright freezes with page.clock.install.
+   A live clock would make every screenshot differ from its baseline, so the fixture is
+   the default. Overrides for hand-demos only:
+     ?now=2026-12-31T07:30   — render any other instant
+     ?live=1                 — follow the real clock (never used for screenshots)      */
+const FIXTURE = new Date(2026, 8, 6, 21, 14, 0);          // Sun 06 Sep 2026, 21:14 local
+const PARAMS = new URLSearchParams(location.search);
+const LIVE = PARAMS.get('live') === '1';
+let now = (() => {
+  const q = PARAMS.get('now'); const d = q ? new Date(q) : null;
+  if (d && !isNaN(d.getTime())) return d;
+  return LIVE ? new Date() : FIXTURE;
+})();
+const issueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+if (now.getHours() < 3) issueDate.setDate(issueDate.getDate() - 1);
+/* Issue number = daysBetween(firstIssueDay, dayKey) + 1 — NOT day-of-year. It only
+   coincides with day-of-year here because this reader's first issue was 1 January. */
+const FIRST_ISSUE_DAY = new Date(2026, 0, 1, 12);
+const daysBetween = (a, b) => Math.round(
+  (Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5);
+const ISSUE = daysBetween(FIRST_ISSUE_DAY, issueDate) + 1;   // 248 + 1 = 249
+const device = $('#device');
+const app = $('#app');
+
+/* ---------- mock data ---------- */
+const NOTES = {
+  1: 'Ask about the foreign transaction fee they added in July. The reference number is on the August statement, third page.',
+  2: 'Attribution section, the keystore note, and one screenshot of the colophon. Paste a list to make sub-entries.',
+  4: 'The card in the drawer says "overdue since March". Do not read the card.',
+  5: 'The basil is dramatic but alive.',
+  6: 'Chapter nine. Smiley is about to be right about everything again.',
+  7: 'The PKCS12 one from CI. Losing it means every future APK refuses to install over the old one.',
+  8: 'She suggested the place with the good bread.'
+};
+/* Seven live entries, three of them closed — the documented fixture day: counter 3 / 7,
+   and closing the rest prints "Seven entries." in the colophon. Deadlines use the real
+   2026 calendar: 04 Sep is a Friday, 12 Sep a Saturday, 07 Sep a Monday. */
+const SEED = () => [
+  { id: 1, title: 'Call the bank about the card', meta: ['09:30', '#ADMIN'], section: 'today', when: 'Today', deadline: '—', repeat: 'Never', reminder: '09:15', tags: '#ADMIN' },
+  { id: 2, title: 'Draft the Nocturne README', meta: ['#WORK'], overdue: 'Overdue Fri', section: 'today', when: 'Today', deadline: 'Fri 04 Sep', repeat: 'Every weekday', reminder: '17:00', tags: '#WORK', check: [['Outline', true], ['Attribution section', false], ['Screenshots', false]] },
+  { id: 4, title: 'Book the dentist before the dentist books me', meta: ['#ADMIN'], section: 'today', when: 'Today', deadline: 'Sat 12 Sep', repeat: 'Never', reminder: '—', tags: '#ADMIN' },
+  { id: 8, title: 'Reply to Priya about Sunday', meta: ['#FAMILY'], done: '12:40', section: 'today', when: 'Today', deadline: '—', repeat: 'Never', reminder: '—', tags: '#FAMILY' },
+  { id: 5, title: 'Water the plants', meta: ['#HOME'], done: '18:02', section: 'today', when: 'Today', deadline: '—', repeat: 'Every 3 days after', reminder: '—', tags: '#HOME' },
+  { id: 6, title: 'Read 20 pages of the le Carré', meta: ['21:00'], section: 'evening', when: 'This evening', deadline: '—', repeat: 'Every day', reminder: '21:00', tags: '#READ' },
+  { id: 7, title: 'Back up the keystore to the password manager', meta: ['#WORK'], done: '20:55', section: 'evening', when: 'This evening', deadline: 'Mon 07 Sep', repeat: 'Never', reminder: '21:30', tags: '#WORK' }
+];
+let entries = SEED();
+let nextId = 20;
+let noteStep = 0;
+
+/* ---------- audio: synthesised, off by default (§12) ---------- */
+const audio = { ctx: null, on: false };
+const SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+const ctx = () => (audio.ctx ||= new (window.AudioContext || window.webkitAudioContext)());
+function tone(freq, dur, gain = 0.18, type = 'sine', at = 0) {
+  if (!audio.on) return; const c = ctx(); const t = c.currentTime + at;
+  const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function tick() { if (!audio.on) return; const c = ctx(); const len = Math.floor(c.sampleRate * 0.04); const b = c.createBuffer(1, len, c.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len); const s = c.createBufferSource(); s.buffer = b; const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 1.2; const g = c.createGain(); g.gain.value = 0.12; s.connect(f).connect(g).connect(c.destination); s.start(); }
+const sfx = {
+  strike() { tick(); tone(SCALE[noteStep++ % SCALE.length], 0.6); },
+  thock() { tone(90, 0.07, 0.3); },
+  chime() { tone(440, 0.3, 0.16); tone(660, 0.5, 0.16, 'sine', 0.18); }
+};
+let userGesture = false; addEventListener('pointerdown', () => { userGesture = true; }, { once: true, passive: true });
+const haptic = ms => { if (!userGesture) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* no-op */ } };
+
+/* ---------- digit roll ---------- */
+function setRoll(el, text, opts = {}) {
+  text = String(text);
+  const prev = el.dataset.value;
+  const same = prev !== undefined && prev.length === text.length && [...prev].every((c, i) => (/\d/.test(c)) === (/\d/.test(text[i])));
+  if (!same) {
+    el.innerHTML = [...text].map(c => /\d/.test(c)
+      ? `<span class="dcol"><span class="dstack" style="transform:translateY(-${c}em)">${[0,1,2,3,4,5,6,7,8,9].map(n => `<span>${n}</span>`).join('')}</span></span>`
+      : `<span class="dch">${c === ' ' ? '&nbsp;' : esc(c)}</span>`).join('');
+    if (opts.pre) { el.classList.add('pre'); void el.offsetWidth; requestAnimationFrame(() => setTimeout(() => el.classList.remove('pre'), opts.delay || 0)); }
+  } else {
+    const cols = $$('.dcol', el); let k = 0;
+    [...text].forEach((c, i) => { if (!/\d/.test(c)) return; const st = cols[k++].firstElementChild; st.style.transitionDelay = ((cols.length - k) * 20) + 'ms'; st.style.transform = `translateY(-${c}em)`; });
+  }
+  el.dataset.value = text;
+}
+
+/* ---------- masthead ---------- */
+function buildNumeral(el, str) { el.innerHTML = [...str].map(c => `<span class="col"><span>${c}</span></span>`).join(''); }
+function rollMasthead() {
+  $$('[data-numeral]').forEach(el => {
+    buildNumeral(el, pad2(issueDate.getDate())); el.classList.remove('in');
+    $$('.col span', el).forEach((s, i) => s.style.transitionDelay = (i * 30) + 'ms');
+    void el.offsetWidth; requestAnimationFrame(() => el.classList.add('in'));
+  });
+  $$('[data-roll="issue"]').forEach(el => setRoll(el, ISSUE, { pre: true, delay: 60 }));
+  setTimeout(updateCounter, 180);
+}
+function setGauge() {
+  const h = (now.getHours() + 21) % 24 + now.getMinutes() / 60; // hours since 03:00
+  const f = Math.min(1, h / 24);
+  app.style.setProperty('--day-gauge', f.toFixed(4));
+  const left = Math.round(24 - h);
+  $$('.gauge').forEach(g => { g.setAttribute('aria-valuenow', Math.round(f * 100)); g.setAttribute('aria-valuemin', 0); g.setAttribute('aria-valuemax', 100); g.setAttribute('aria-valuetext', `${left} hours until rollover`); });
+}
+function setClock() {
+  $('#sb-time').textContent = hhmm(now);
+  /* Exactly three greetings, on the spec boundaries: 5–11 morning, 12–16 afternoon,
+     17–4 evening. Never "Good night", never a fourth late-night line. */
+  const h = now.getHours();
+  $('#greeting').textContent = (h >= 5 && h <= 11) ? 'Good morning, Rahul.'
+    : (h >= 12 && h <= 16) ? 'Good afternoon, Rahul.'
+    : 'Good evening, Rahul.';
+}
+$$('[data-month]').forEach(el => el.textContent = MONTHS[issueDate.getMonth()]);
+$('[data-weekday]').textContent = WEEKDAYS[issueDate.getDay()];
+$('#margin-caption').textContent = `Evening Edition · 21:00 · ${WEEKDAYS[issueDate.getDay()]} ${pad2(issueDate.getDate())} ${MONTHS[issueDate.getMonth()]} ${issueDate.getFullYear()}`;
+{ const t = new Date(issueDate); t.setDate(t.getDate() + 1); $('#when-tomorrow').textContent = `${WD3[t.getDay()][0] + WD3[t.getDay()].slice(1).toLowerCase()} ${pad2(t.getDate())}`; }
+
+/* ---------- entries: render ---------- */
+const listToday = $('#list-today'), listEvening = $('#list-evening');
+const listFor = e => e.section === 'evening' ? listEvening : listToday;
+function entryHTML(e) {
+  const meta = (e.meta || []).map(m => `<span>${esc(m)}</span>`);
+  if (e.overdue) meta.push(`<span class="over">${esc(e.overdue)}</span>`);
+  return `<span class="mw mw-left" aria-hidden="true">Done.</span><span class="mw mw-right" aria-hidden="true">When?</span>
+  <div class="entry-body">
+    <button class="folio" type="button" aria-label="Mark done, ${esc(e.title)}"><span class="roll"></span></button>
+    <div class="entry-main">
+      <button class="title" type="button" aria-label="Open ${esc(e.title)}"><span class="title-text">${esc(e.title)}<svg class="strike" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="0.56" x2="100" y2="0.56" pathLength="1"/></svg></span></button>
+      <div class="meta">${meta.join('<span class="sep">·</span>')}<span class="closed">${e.done ? `<span class="sep">·</span>closed ${e.done}` : ''}</span></div>
+    </div>
+  </div>`;
+}
+function makeEntry(e) {
+  const li = document.createElement('li'); li.className = 'entry' + (e.done ? ' done' : ''); li.dataset.id = e.id; li.tabIndex = 0; li.innerHTML = entryHTML(e);
+  bindGestures(li); return li;
+}
+function renderEntries() {
+  listToday.innerHTML = ''; listEvening.innerHTML = '';
+  entries.forEach(e => listFor(e).appendChild(makeEntry(e)));
+  renumber(); updateCounter(false);
+}
+const byId = id => entries.find(e => e.id === +id);
+const liOf = id => $(`.entry[data-id="${id}"]`);
+function renumber() {
+  let n = 0;
+  [listToday, listEvening].forEach(l => $$(':scope > .entry', l).forEach(li => {
+    const r = $('.folio .roll', li);
+    if (li.classList.contains('done')) setRoll(r, '—'); else setRoll(r, pad2(++n));
+  }));
+  const p = $('#plus'); if (p.classList.contains('folio-preview')) p.textContent = pad2(n + 1);
+  $('#empty-today').hidden = entries.length > 0;
+  $('#sec-today').style.display = entries.some(e => e.section === 'today') ? '' : 'none';
+  $('#sec-evening').style.display = entries.some(e => e.section === 'evening') ? '' : 'none';
+}
+function counts() { const t = entries.length, d = entries.filter(e => e.done).length; return { t, d }; }
+function updateCounter(animate = true) {
+  const { t, d } = counts();
+  $$('[data-roll="counter"]').forEach(el => setRoll(el, `${d} / ${t}`, animate ? {} : { pre: true, delay: 120 }));
+  $('#counter-sr').textContent = `${d} of ${t} entries closed`;
+}
+
+/* ---------- FLIP re-set (animation #5) ---------- */
+function flip(mutate, except = null) {
+  const items = $$('#issue-body .entry');
+  const first = new Map(items.map(el => [el, el.getBoundingClientRect().top]));
+  mutate();
+  const moved = [];
+  items.forEach(el => { if (el === except || !el.isConnected) return; const d = first.get(el) - el.getBoundingClientRect().top; if (Math.abs(d) < .5) return; el.style.transition = 'none'; el.style.transform = `translateY(${d}px)`; moved.push(el); });
+  if (!moved.length) return;
+  void document.body.offsetWidth;
+  requestAnimationFrame(() => requestAnimationFrame(() => moved.forEach(el => { el.style.transition = 'transform var(--dur-base) var(--ease-out)'; el.style.transform = ''; el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true }); })));
+}
+
+/* ---------- Ink Strike (§8.2) ---------- */
+let undoTimer = null;
+function strike(li) {
+  if (!li || li.classList.contains('done') || li.dataset.busy) return;
+  const e = byId(li.dataset.id); li.dataset.busy = '1';
+  const line = $('.strike line', li); const t = hhmm();
+  line.style.transition = rm() ? 'none' : 'stroke-dashoffset 320ms var(--ease-out)'; line.style.strokeDashoffset = '0';
+  const prevNext = li.nextElementSibling, prevList = li.parentElement;
+  setTimeout(() => { haptic(8); sfx.strike(); }, rm() ? 0 : 192);
+  setTimeout(() => { li.classList.add('done'); e.done = t; $('.closed', li).innerHTML = `<span class="sep">·</span>closed ${t}`; renumber(); updateCounter(); }, rm() ? 0 : 160);
+  setTimeout(() => {
+    flip(() => li.parentElement.appendChild(li));
+    delete li.dataset.busy;
+    showUndo(e, li, prevList, prevNext);
+    maybeColophon();
+  }, rm() ? 60 : 400);
+}
+function unstrike(li, list, before) {
+  const e = byId(li.dataset.id); if (!e || !e.done) return;
+  const line = $('.strike line', li); line.style.transition = rm() ? 'none' : 'stroke-dashoffset 240ms var(--ease-out)'; line.style.strokeDashoffset = '1';
+  li.classList.remove('done'); e.done = null; $('.closed', li).innerHTML = '';
+  flip(() => { if (before && before.isConnected) list.insertBefore(li, before); else list.appendChild(li); });
+  renumber(); updateCounter(); closeColophon();
+}
+function showUndo(e, li, list, before) {
+  const hint = $('#hint'); clearTimeout(undoTimer);
+  const idx = $$('#issue-body .entry').indexOf(li);
+  hint.innerHTML = `<button class="undo-btn" type="button">Entry ${pad2(idx + 1)} closed — <u>Undo</u></button><i class="undo-rule"></i>`;
+  $('.undo-btn', hint).onclick = () => { unstrike(li, list, before); restoreHint(); };
+  undoTimer = setTimeout(restoreHint, 5000);
+}
+function restoreHint() { clearTimeout(undoTimer); $('#hint').textContent = 'Enter to file · Shift+Enter for this evening'; }
+
+/* ---------- The Colophon (§8.5) ---------- */
+function maybeColophon() {
+  const { t, d } = counts(); if (!t || d < t) return;
+  const page = $('#page-today'), col = $('#colophon');
+  $('#col-time').textContent = hhmm(); $('#col-count').textContent = `${WORDS[t] || t} ${t === 1 ? 'entry' : 'entries'}.`;
+  page.classList.add('closed'); void col.offsetWidth;
+  $$('[data-roll="issue"]', col).forEach(el => setRoll(el, ISSUE)); setRoll($('#col-streak'), 12);
+  requestAnimationFrame(() => { col.classList.add('in'); col.scrollIntoView({ behavior: rm() ? 'auto' : 'smooth', block: 'start' }); });
+  setTimeout(() => { haptic([12, 40, 12]); sfx.chime(); }, rm() ? 0 : 700);
+}
+function closeColophon() { $('#page-today').classList.remove('closed'); $('#colophon').classList.remove('in'); }
+$('#standfirst').addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter' || !ev.target.value.trim()) return;
+  const sf = ev.target.value.trim(); ev.target.value = ''; ev.target.placeholder = 'Filed to Back Issues.';
+  const row = { back: 0, c: `${counts().t} / ${counts().t}`, closed: hhmm(), sf };
+  ISSUES[0].rows.unshift(row); renderIssues();
+});
+$('#share-btn').addEventListener('click', () => { $('#share-btn').textContent = 'Rendered 1080 × 1920'; setTimeout(() => $('#share-btn').textContent = 'Share the issue', 1800); });
+$('#tomorrow-btn').addEventListener('click', () => showPage('upcoming'));
+
+/* ---------- gestures: swipe (Margin Words), long-press lift (Folio Renumber) ---------- */
+let suppressClick = false;
+const elastic = x => Math.abs(x) <= 120 ? x : Math.sign(x) * (120 + (Math.abs(x) - 120) * 0.2);
+function bindGestures(li) {
+  const body = $('.entry-body', li), mwL = $('.mw-left', li), mwR = $('.mw-right', li);
+  let st = null;
+  const touchBlock = ev => { if (st && st.mode === 'lift') ev.preventDefault(); };
+  li.addEventListener('touchmove', touchBlock, { passive: false });
+  li.addEventListener('pointerdown', ev => {
+    if (ev.button !== 0 || li.classList.contains('done') && ev.target.closest('.folio')) return;
+    st = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, mode: null, lastX: ev.clientX, lastT: performance.now(), vx: 0, shift: 0, armed: false };
+    st.timer = setTimeout(() => { if (st && !st.mode) startLift(ev); }, 250);
+  });
+  li.addEventListener('pointermove', ev => {
+    if (!st || ev.pointerId !== st.id) return;
+    const dx = ev.clientX - st.x, dy = ev.clientY - st.y;
+    if (!st.mode) {
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) { st.mode = 'swipe'; clearTimeout(st.timer); li.setPointerCapture(ev.pointerId); li.classList.add('dragging'); suppressClick = true; }
+      else if (Math.abs(dy) > 8) { st.mode = 'scroll'; clearTimeout(st.timer); }
+      else return;
+    }
+    if (st.mode === 'swipe') {
+      const x = elastic(dx); body.style.transition = 'none'; body.style.transform = `translateX(${x}px)`;
+      const p = Math.min(1, Math.abs(dx) / 90);
+      mwL.style.opacity = dx > 0 ? p : 0; mwR.style.opacity = dx < 0 ? p : 0;
+      const armed = Math.abs(dx) >= 90;
+      if (armed !== st.armed) { st.armed = armed; mwL.classList.toggle('armed', armed && dx > 0); mwR.classList.toggle('armed', armed && dx < 0); if (armed) haptic(12); }
+      const t = performance.now(); if (t - st.lastT > 0) st.vx = (ev.clientX - st.lastX) / (t - st.lastT) * 1000; st.lastX = ev.clientX; st.lastT = t;
+    } else if (st.mode === 'lift') { liftMove(dy); }
+  });
+  const end = ev => {
+    if (!st || ev.pointerId !== st.id) return; clearTimeout(st.timer);
+    const dx = ev.clientX - st.x;
+    if (st.mode === 'swipe') {
+      body.style.transition = 'transform 320ms var(--ease-spring)'; body.style.transform = '';
+      mwL.style.opacity = 0; mwR.style.opacity = 0; mwL.classList.remove('armed'); mwR.classList.remove('armed');
+      body.addEventListener('transitionend', () => { body.style.transition = ''; li.classList.remove('dragging'); }, { once: true });
+      if (ev.type !== 'pointercancel') { if (dx > 90 || st.vx > 600) strike(li); else if (dx < -90 || st.vx < -600) openWhen(li); }
+    } else if (st.mode === 'lift') { drop(); }
+    st = null; setTimeout(() => suppressClick = false, 0);
+  };
+  li.addEventListener('pointerup', end); li.addEventListener('pointercancel', end);
+
+  function startLift(ev) {
+    if (li.classList.contains('done')) return;
+    st.mode = 'lift'; try { li.setPointerCapture(st.id); } catch (e) { /* ignore */ }
+    li.classList.add('lifted'); suppressClick = true; haptic(10);
+    body.style.transition = 'transform var(--dur-fast) var(--ease-out)'; body.style.transform = rm() ? '' : 'scale(1.02)';
+  }
+  function liftMove(dy) {
+    const y = dy - st.shift; body.style.transition = 'none'; body.style.transform = `translateY(${y}px)${rm() ? '' : ' scale(1.02)'}`;
+    const next = li.nextElementSibling, prev = li.previousElementSibling;
+    if (next && !next.classList.contains('done') && y > next.offsetHeight / 2) { flip(() => next.after(li), li); st.shift += next.offsetHeight; renumber(); haptic(4); }
+    else if (prev && !prev.classList.contains('done') && y < -prev.offsetHeight / 2) { flip(() => prev.before(li), li); st.shift -= prev.offsetHeight; renumber(); haptic(4); }
+  }
+  function drop() {
+    li.classList.remove('lifted'); body.style.transition = 'transform 320ms var(--ease-spring)'; body.style.transform = '';
+    body.addEventListener('transitionend', () => { body.style.transition = ''; }, { once: true });
+    sfx.thock(); syncOrder();
+  }
+  $('.folio', li).addEventListener('click', () => { if (!suppressClick) strike(li); });
+  $('.title', li).addEventListener('click', () => { if (!suppressClick) openSheet(li); });
+}
+function syncOrder() { const order = $$('#issue-body .entry').map(li => byId(li.dataset.id)); entries = order; }
+
+/* ---------- sheets ---------- */
+const scrim = $('#scrim'); let openSheetEl = null, lastFocus = null;
+function openSheet(li) {
+  const e = byId(li.dataset.id); const idx = $$('#issue-body .entry').indexOf(li);
+  $('#sheet-folio').textContent = e.done ? '—' : pad2(idx + 1); $('#sheet-title').textContent = e.title;
+  $('#sheet-notes').textContent = NOTES[e.id] || 'Notes in Geist 15/22. Paste a list to make sub-entries.';
+  $('#sheet-check').innerHTML = (e.check || []).map((c, i) => `<li><span class="f">${pad2(idx + 1)}.${i + 1}</span><span class="box${c[1] ? ' on' : ''}" role="checkbox" aria-checked="${c[1]}" aria-label="${esc(c[0])}"></span><span>${esc(c[0])}</span></li>`).join('');
+  const rows = [['When', e.when], ['Deadline', e.deadline], ['Repeat', e.repeat], ['Reminder', e.reminder === '—' ? '—' : e.reminder + ' <sup>¹</sup>'], ['Tags', e.tags]];
+  $('#sheet-table').innerHTML = rows.map(([k, v]) => `<div class="r" role="button" tabindex="0"><span class="k">${k}</span><span class="v">${v}</span><span class="chev">›</span></div>`).join('');
+  $('#sheet-foot').textContent = e.reminder !== '—' ? '¹ Reminders may be delayed until you allow "Alarms & reminders". Open ›' : '';
+  show($('#sheet-entry'));
+}
+function openWhen(li) { $('#when-folio').textContent = $('.folio .roll', li).dataset.value; $('#sheet-when').dataset.id = li.dataset.id; show($('#sheet-when')); }
+function show(sheet) { lastFocus = document.activeElement; openSheetEl = sheet; scrim.classList.add('open'); sheet.classList.add('open'); sheet.focus({ preventScroll: true }); }
+function closeSheet() { if (!openSheetEl) return; scrim.classList.remove('open'); openSheetEl.classList.remove('open'); openSheetEl = null; if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); }
+scrim.addEventListener('click', closeSheet);
+$$('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+$$('.grabber').forEach(g => { let y0 = null; g.addEventListener('pointerdown', ev => { y0 = ev.clientY; g.setPointerCapture(ev.pointerId); }); g.addEventListener('pointerup', ev => { if (y0 !== null && ev.clientY - y0 > 24) closeSheet(); y0 = null; }); });
+$('#when-list').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  const li = liOf($('#sheet-when').dataset.id), e = byId(li.dataset.id), w = b.dataset.when; closeSheet();
+  if (w === 'today' || w === 'evening') {
+    if (e.section === w) return; e.section = w; e.when = w === 'today' ? 'Today' : 'This evening';
+    flip(() => { const l = listFor(e); const firstDone = $$(':scope > .entry.done', l)[0]; l.insertBefore(li, firstDone || null); });
+    syncOrder(); renumber(); updateCounter(); flashHint(`Entry moved to ${w === 'today' ? 'Section I' : 'this evening'}.`);
+  } else {
+    const label = { tomorrow: 'tomorrow', weekend: 'the weekend', someday: 'Someday' }[w];
+    li.style.transition = 'opacity var(--dur-base) var(--ease-out)'; li.style.opacity = '0';
+    setTimeout(() => { flip(() => li.remove()); entries = entries.filter(x => x !== e); renumber(); updateCounter(); maybeColophon(); flashHint(`Entry set for ${label}.`); }, rm() ? 0 : 240);
+  }
+});
+function flashHint(t) { clearTimeout(undoTimer); $('#hint').textContent = t; undoTimer = setTimeout(restoreHint, 4000); }
+
+/* ---------- composer: parsing chips, Enter files ---------- */
+const compose = $('#compose'), chips = $('#chips'), plus = $('#plus');
+const RULES = [
+  { k: 'when', re: /\b(today|tomorrow|tonight|this evening|next week|on (mon|tue|wed|thu|fri|sat|sun)[a-z]*|(mon|tues|wednes|thurs|fri|satur|sun)day|weekend)\b/i },
+  { k: 'time', re: /\b(([01]?\d|2[0-3]):[0-5]\d|\d{1,2}\s?(am|pm))\b/i },
+  { k: 'repeat', re: /\bevery (day|weekday|week|month|year|\d+ (days|weeks)|(mon|tues|wednes|thurs|fri|satur|sun)day)\b/i },
+  { k: 'tag', re: /#\w+/ }
+];
+let parsed = [], discarded = new Set();
+function parse() {
+  const v = compose.value; parsed = [];
+  RULES.forEach(r => { const m = v.match(r.re); if (m) parsed.push({ k: r.k, text: m[0], label: m[0].toUpperCase() }); });
+  chips.innerHTML = parsed.map((p, i) => `<button class="chip${discarded.has(p.k) ? ' off' : ''}" type="button" data-i="${i}" aria-pressed="${!discarded.has(p.k)}">${esc(p.label)}</button>`).join('');
+  if (v.trim()) { plus.classList.add('folio-preview'); plus.textContent = pad2(entries.filter(e => !e.done).length + 1); }
+  else { plus.classList.remove('folio-preview'); plus.textContent = '+'; discarded.clear(); }
+}
+compose.addEventListener('input', parse);
+chips.addEventListener('click', ev => { const c = ev.target.closest('.chip'); if (!c) return; const p = parsed[+c.dataset.i]; discarded.has(p.k) ? discarded.delete(p.k) : discarded.add(p.k); parse(); });
+$('#composer').addEventListener('submit', ev => ev.preventDefault());
+compose.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') { compose.blur(); return; }
+  if (ev.key !== 'Enter') return; ev.preventDefault();
+  let title = compose.value.trim(); if (!title) { compose.blur(); return; }
+  const meta = []; let section = ev.shiftKey ? 'evening' : 'today'; let when = 'Today', repeat = 'Never', tags = '—', reminder = '—';
+  parsed.forEach(p => { if (discarded.has(p.k)) return; title = title.replace(p.text, '').replace(/\s{2,}/g, ' ').trim();
+    if (p.k === 'time') { meta.unshift(p.label); reminder = p.label; }
+    if (p.k === 'tag') { meta.push(p.label); tags = p.label; }
+    if (p.k === 'repeat') { repeat = p.text[0].toUpperCase() + p.text.slice(1); }
+    if (p.k === 'when') { when = p.text[0].toUpperCase() + p.text.slice(1); if (/evening|tonight/i.test(p.text)) section = 'evening'; else if (!/today/i.test(p.text)) meta.push(p.label); } });
+  title = title.replace(/^[\s,.-]+|[\s,.-]+$/g, '') || 'Untitled entry';
+  const e = { id: nextId++, title, meta, section, when: section === 'evening' ? 'This evening' : when, deadline: '—', repeat, reminder, tags };
+  const l = listFor(e); const firstDone = $$(':scope > .entry.done', l)[0];
+  const li = makeEntry(e); li.style.opacity = '0'; li.style.transform = 'translateY(6px)';
+  flip(() => l.insertBefore(li, firstDone || null), li); syncOrder(); renumber(); updateCounter(); closeColophon();
+  requestAnimationFrame(() => { li.style.transition = 'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out)'; li.style.opacity = ''; li.style.transform = ''; });
+  compose.value = ''; parse(); flashHint(`Filed as entry ${$('.folio .roll', li).dataset.value}${section === 'evening' ? ' · this evening' : ''}.`);
+});
+
+/* ---------- pages / tabs ---------- */
+let current = 'today';
+function showPage(name) {
+  if (name === current) return;
+  const swap = () => {
+    $$('.page').forEach(p => { p.classList.toggle('active', p.id === 'page-' + name); p.classList.remove('fade'); });
+    $('#page-' + name).classList.add('fade'); $('#pages').scrollTop = 0;
+    $$('[data-page]').forEach(b => b.setAttribute('aria-selected', b.dataset.page === name)); positionUnderline(); current = name;
+  };
+  if (document.startViewTransition && !rm()) { $$('.page').forEach(p => p.classList.remove('fade')); document.startViewTransition(swap); } else swap();
+}
+function positionUnderline() {
+  const t = $(`.tab[data-page="${current}"]`) || $('.tab[aria-selected="true"]'); if (!t) return;
+  const r = t.getBoundingClientRect(), pr = t.parentElement.getBoundingClientRect(); const w = Math.max(24, r.width * .5);
+  const u = $('#tab-underline'); u.style.width = w + 'px'; u.style.transform = `translateX(${r.left - pr.left + (r.width - w) / 2}px)`;
+}
+document.addEventListener('click', ev => { const b = ev.target.closest('[data-page]'); if (b) showPage(b.dataset.page); });
+new ResizeObserver(positionUnderline).observe($('#tabs'));
+
+/* ---------- keyboard ---------- */
+let sel = -1;
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') { closeSheet(); return; }
+  if (ev.target.matches('input, textarea') || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  const items = $$('#issue-body .entry'); const pages = ['today', 'upcoming', 'ledger', 'issues'];
+  const select = i => { sel = Math.max(0, Math.min(items.length - 1, i)); items.forEach((li, k) => li.classList.toggle('selected', k === sel)); items[sel] && items[sel].focus({ preventScroll: false }); };
+  switch (ev.key) {
+    case 'j': case 'ArrowDown': if (current === 'today') { ev.preventDefault(); select(sel + 1); } break;
+    case 'k': case 'ArrowUp': if (current === 'today') { ev.preventDefault(); select(sel - 1); } break;
+    case 'x': if (items[sel]) strike(items[sel]); break;
+    case 'w': if (items[sel]) openWhen(items[sel]); break;
+    case 'e': if (items[sel]) openSheet(items[sel]); break;
+    case 'n': ev.preventDefault(); showPage('today'); compose.focus(); break;
+    case '[': showPage(pages[(pages.indexOf(current) + 3) % 4]); break;
+    case ']': showPage(pages[(pages.indexOf(current) + 1) % 4]); break;
+  }
+});
+
+/* ---------- Week Spread ---------- */
+const WEEK = [
+  { items: [['Weekly review', '10:00'], ['Groceries', '#HOME']] },
+  { over: 1, items: [['Renew passport', 'Due', true], ['Standup notes', '#WORK']] },
+  { items: [['Gym', '07:00'], ['Call the landlord about the tap', '#HOME']] },
+  { items: [] },
+  { items: [['Pay the electricity', '#ADMIN']] },
+  { items: [['Nocturne README deadline', 'Deadline', true], ['Dinner with Priya', '19:30']] },
+  { items: [['Long run', '08:00'], ['Return the ladder, honestly', '#HOME']] }
+];
+function renderWeek() {
+  const wk = $('#week'); wk.innerHTML = WEEK.map((d, i) => {
+    const dt = new Date(issueDate); dt.setDate(dt.getDate() + i + 1);
+    const cnt = d.over ? `<span class="cnt rh over">overdue ${d.over}</span>` : `<span class="cnt rh">${d.items.length ? d.items.length + (d.items.length === 1 ? ' entry' : ' entries') : ''}</span>`;
+    const rows = d.items.length ? d.items.map((it, k) => `<li class="entry compact" tabindex="0"><div class="entry-body"><span class="folio" aria-hidden="true">${pad2(k + 1)}</span><div class="entry-main"><span class="title">${esc(it[0])}</span></div><span class="tail${it[2] ? ' over' : ''}">${esc(it[1])}</span></div></li>`).join('') : '';
+    return `<div class="day"><div class="day-head"><span class="rh">${WD3[dt.getDay()]}</span><span class="dn">${pad2(dt.getDate())}</span>${cnt}</div>${rows ? `<ul class="entries">${rows}</ul>` : '<div class="day-empty"><span>—</span><span></span></div>'}</div>`;
+  }).join('');
+}
+
+/* ---------- The Ledger ---------- */
+const HABITS = [
+  { id: 'mp', name: 'Morning pages', streak: 11, best: 11, strength: 78, done: false },
+  { id: 'run', name: 'Run', streak: 3, best: 3, strength: 52, done: false },
+  { id: 'read', name: 'Read before bed', streak: 26, best: 26, strength: 91, done: true },
+  { id: 'sugar', name: 'No sugar', streak: 0, best: 12, strength: 0, done: false }
+];
+let heatHabit = HABITS[0];
+function ringSVG(h) { return `<svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="track" cx="12" cy="12" r="11"/><circle class="arc" cx="12" cy="12" r="11" pathLength="100" style="stroke-dashoffset:${100 - h.strength}"/></svg>`; }
+function renderLedger() {
+  $('#ledger').innerHTML = HABITS.map(h => `<button class="ledger-line" type="button" data-h="${h.id}" aria-pressed="${h.done}" aria-label="${esc(h.name)}, streak ${h.streak}, best ${h.best}, ${h.done ? 'closed today' : 'open today'}"><span>${esc(h.name)}</span><span class="st"><span class="roll" data-streak></span><span>·</span><span>${h.best}</span></span>${ringSVG(h)}</button>`).join('');
+  $$('.ledger-line', $('#ledger')).forEach(b => setRoll($('[data-streak]', b), HABITS.find(h => h.id === b.dataset.h).streak));
+  $('#ledger-archived').innerHTML = `<div class="ledger-line archived" aria-disabled="true"><span>Cold showers</span><span class="st"><span class="roll">0</span><span>·</span><span>3</span></span>${ringSVG({ strength: 0 })}</div>`;
+  renderHeat();
+}
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function renderHeat() {
+  const h = heatHabit; const r = rng(h.name.length * 7919 + h.best); const cells = [];
+  const todayDow = (issueDate.getDay() + 6) % 7; // Monday = 0
+  for (let w = 0; w < 12; w++) for (let d = 0; d < 7; d++) {
+    const x = 6 + w * 14, y = 6 + d * 13.5; const isToday = w === 11 && d === todayDow; const future = w === 11 && d > todayDow;
+    if (future) continue;
+    if (isToday) { cells.push(h.done ? `<circle class="dot" cx="${x}" cy="${y}" r="3.2"/>` : `<text class="tod" x="${x}" y="${y + 2.6}" text-anchor="middle">${pad2(issueDate.getDate())}</text>`); continue; }
+    const inStreak = (11 - w) * 7 + (todayDow - d) <= h.streak && (11 - w) * 7 + (todayDow - d) > 0;
+    const done = inStreak || r() < h.strength / 100;
+    cells.push(done ? `<circle class="dot" cx="${x}" cy="${y}" r="3"/>` : `<circle class="miss" cx="${x}" cy="${y}" r="2.5"/>`);
+  }
+  $('#heat').innerHTML = cells.join(''); $('#heat-name').textContent = h.name;
+  $('#big-arc').style.strokeDashoffset = 100 - h.strength; setRoll($('#big-pct'), h.strength);
+}
+$('#ledger').addEventListener('click', ev => {
+  const b = ev.target.closest('.ledger-line'); if (!b) return; const h = HABITS.find(x => x.id === b.dataset.h);
+  h.done = !h.done; h.streak += h.done ? 1 : -1; h.strength = Math.round(h.done ? h.strength + (100 - h.strength) * 0.052 : Math.max(0, (h.strength - 5.2) / 0.948));
+  if (h.streak > h.best) h.best = h.streak;
+  b.setAttribute('aria-pressed', h.done); setRoll($('[data-streak]', b), h.streak); $('.st span:last-child', b).textContent = h.best;
+  $('.arc', b).style.strokeDashoffset = 100 - h.strength; if (h.done) { haptic(8); sfx.strike(); }
+  heatHabit = h; renderHeat();
+});
+
+/* ---------- Back Issues ---------- */
+/* Rows carry `back` = days before the current issue; the number and the running-head
+   date are derived from the fixture, so a weekday label can never go stale again.
+   With the default fixture: back 1 → No. 248 SAT 05 SEP … back 12 → No. 237 TUE 25 AUG.
+   The month grouping below is written for the fixture day (?now= overrides may straddle). */
+const M3 = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const backDate = back => { const d = new Date(issueDate); d.setDate(d.getDate() - back); return d; };
+const dayLabel = back => { const d = backDate(back); return `${WD3[d.getDay()]} ${pad2(d.getDate())} ${M3[d.getMonth()]}`; };
+const ISSUES = [
+  { month: 'September', rows: [
+    { back: 1, c: '6 / 6', closed: '22:03', sf: 'Finally shipped the keystore workflow.' },
+    { back: 2, c: '4 / 7', open: true },
+    { back: 3, c: '5 / 5', closed: '21:41', sf: 'The ladder remains unreturned.' },
+    { back: 4, c: '3 / 3', closed: '20:15' },
+    { week: 'Week 36 · 25 / 29 · 3 issues closed' },
+    { back: 5, c: '7 / 8', open: true }
+  ] },
+  { month: 'August', rows: [
+    { back: 6, c: '2 / 2', closed: '23:58', sf: 'Cut it fine.' },
+    { back: 7, c: '5 / 5', closed: '19:20', sf: 'A whole Sunday and nothing caught fire.' },
+    { back: 8, c: '6 / 9', open: true },
+    { back: 9, c: '4 / 4', closed: '21:07', sf: 'Dentist rescheduled. By the dentist.' },
+    { week: 'Week 35 · 31 / 42 · 5 issues closed' },
+    { back: 12, c: '3 / 6', open: true }
+  ] }
+];
+function renderIssues() {
+  $('#issues').innerHTML = ISSUES.map(m => `<div class="month-head">${m.month}</div>` + m.rows.map(r => r.week
+    ? `<div class="week-head rh"><span>${r.week}</span></div>`
+    : `<button class="issue-row${r.open ? ' open' : ''}" type="button"><div class="im">No. ${ISSUE - r.back} · ${dayLabel(r.back)} · ${r.c} · ${r.open ? 'open' : 'closed ' + r.closed}</div>${r.sf ? `<div class="sf">${esc(r.sf)}</div>` : ''}</button>`).join('')).join('');
+}
+
+/* ---------- desktop mini calendar ---------- */
+function renderCal() {
+  const y = issueDate.getFullYear(), m = issueDate.getMonth(); const first = (new Date(y, m, 1).getDay() + 6) % 7; const days = new Date(y, m + 1, 0).getDate();
+  const dots = new Set([1, 2, 3, 4, 5, 6, 7].map(i => issueDate.getDate() + i).filter(d => d !== issueDate.getDate() + 4));
+  let html = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(h => `<span class="h">${h}</span>`).join('');
+  for (let i = 0; i < first; i++) html += '<span></span>';
+  for (let d = 1; d <= days; d++) html += `<span class="d${d === issueDate.getDate() ? ' today' : ''}${dots.has(d) ? ' dot' : ''}${d < issueDate.getDate() ? ' past' : ''}">${d}</span>`;
+  $('#cal').innerHTML = html;
+}
+
+/* ---------- preview bar ---------- */
+$$('#pv-theme .pv-btn').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.theme = b.dataset.theme; $('meta[name=theme-color]').content = b.dataset.theme === 'proof' ? '#F5F1E8' : '#0A1024';
+  $$('#pv-theme .pv-btn').forEach(x => x.setAttribute('aria-pressed', x === b));
+}));
+$$('#pv-frame .pv-btn').forEach(b => b.addEventListener('click', () => {
+  device.dataset.frame = b.dataset.frame; $$('#pv-frame .pv-btn').forEach(x => x.setAttribute('aria-pressed', x === b)); requestAnimationFrame(positionUnderline);
+}));
+const evBtn = $('#pv-evening');
+function setEvening(on) { device.classList.toggle('evening', on); evBtn.setAttribute('aria-pressed', on); }
+evBtn.addEventListener('click', () => setEvening(!device.classList.contains('evening')));
+$('#pv-sound').addEventListener('click', () => { audio.on = !audio.on; $('#pv-sound').setAttribute('aria-pressed', audio.on); $('#pv-sound').textContent = audio.on ? 'Sound on' : 'Sound off'; if (audio.on) ctx().resume(); });
+$('#pv-colophon').addEventListener('click', () => { showPage('today'); const open = $$('#issue-body .entry:not(.done)'); open.forEach((li, i) => setTimeout(() => strike(li), i * 140)); });
+$('#pv-reset').addEventListener('click', () => { entries = SEED(); noteStep = 0; restoreHint(); closeColophon(); $('#standfirst').placeholder = 'A line for the record —'; renderEntries(); showPage('today'); rollMasthead(); });
+matchMedia('(max-width: 1023px)').addEventListener('change', ev => { if (ev.matches && device.dataset.frame === 'desktop') $('#pv-frame [data-frame="phone"]').click(); });
+
+/* ---------- boot ---------- */
+try { if (!window.indexedDB) $('#storage-note').style.display = 'block'; } catch (e) { $('#storage-note').style.display = 'block'; }
+setEvening(now.getHours() >= 21 || now.getHours() < 3);
+setClock(); setGauge();
+if (LIVE) setInterval(() => { now = new Date(); setClock(); setGauge(); }, 60000);   // frozen by default
+renderEntries(); renderWeek(); renderLedger(); renderIssues(); renderCal();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { rollMasthead(); positionUnderline(); }); else { rollMasthead(); positionUnderline(); }
+setTimeout(positionUnderline, 600);
+})();
+</script>
+</body>
+</html>
