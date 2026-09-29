@@ -228,7 +228,7 @@ export async function reopen(entryId: Id): Promise<void> {
   const now = clock.now();
   await db.transaction("rw", db.entries, db.issues, db.meta, db.settings, async () => {
     const e = await db.entries.get(entryId);
-    if (!e || e.status !== "done") return;
+    if (e?.status !== "done") return;
     const next: Entry = { ...e, status: "open", updatedAt: now };
     delete next.completedAt;
     await db.entries.put(next);

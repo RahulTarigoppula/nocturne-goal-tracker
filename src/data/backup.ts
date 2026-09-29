@@ -67,7 +67,7 @@ export function parseBackup(text: string): BackupFile {
     throw new BackupError("Not a Nocturne backup");
   }
   const d = doc as Partial<BackupFile> | null;
-  if (!d || d.format !== "nocturne-backup" || typeof d.data !== "object" || !d.data) {
+  if (d?.format !== "nocturne-backup" || typeof d.data !== "object" || !d.data) {
     throw new BackupError("Not a Nocturne backup");
   }
   if (typeof d.schema !== "number" || d.schema > SCHEMA_VERSION) {

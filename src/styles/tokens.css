@@ -1,0 +1,158 @@
+/* The ONLY file in src/ that may contain a hex value. */
+:root {
+  /* ---- Night (default) ---- */
+  --bg: #0a1024;
+  --bg-elevated: #0f172e;
+  --surface: #131c36;
+  --surface-2: #1a2542;
+  --ink: #eef1f8;
+  --ink-muted: #9aa6c4;
+  --ink-faint: #5b6685;
+  --accent: #e8c170;
+  --accent-ink: #0a1024;
+  --accent-2: #ec6d58;
+  --success: #9ccbb0;
+  --warning: var(--accent);
+  --danger: var(--accent-2);
+  --border: #26304d;
+  --border-strong: #3a4666;
+  --focus: #f2d68a;
+
+  /* ---- Type ---- */
+  --font-display: "Bricolage Grotesque Variable", "Geist Variable", system-ui, sans-serif;
+  --font-body: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-4xl: 4.5rem;
+  --text-5xl: clamp(5.5rem, 28vw, 7rem);
+  --leading-tight: 1.1;
+  --leading-body: 1.467;
+  --tracking-caps: 0.08em;
+  --tracking-mono: 0.04em;
+  --tracking-display: -0.03em;
+
+  /* ---- Space ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
+  --space-11: 5rem;
+  --space-12: 6rem;
+  --page-margin: 1.25rem;
+  --folio-col: 2.25rem;
+  --row-min: 3.5rem;
+
+  /* ---- Shape & depth ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+  --shadow-1: 0 1px 0 0 rgb(0 0 0 / 0.25);
+  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 -8px 40px rgb(0 0 0 / 0.5);
+  --hairline: 1px solid var(--border);
+  --grain-opacity: 0.035;
+  --sheet-scrim: rgb(15 23 46 / 0.72);
+  --sheet-blur: 16px;
+
+  /* ---- Motion ---- */
+  --dur-fast: 120ms;
+  --dur-base: 240ms;
+  --dur-slow: 480ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: linear(0, 0.29, 0.62, 0.84, 0.95, 1);
+
+  /* ---- App-specific ---- */
+  --evening-hour: 21;
+  --day-gauge: 0;
+  --swipe-threshold: 90px;
+  --strike-width: 1px;
+  --mask-solid: #000;
+  color-scheme: dark;
+}
+
+:root[data-theme="proof"] {
+  --bg: #f5f1e8;
+  --bg-elevated: #ece6d8;
+  --surface: #fbf9f3;
+  --surface-2: #e4dccb;
+  --ink: #0a1024;
+  --ink-muted: #414b66;
+  --ink-faint: #8a93ab;
+  --accent: #745816;
+  --accent-ink: #f5f1e8;
+  --accent-2: #9e2f1c;
+  --success: #24634a;
+  --border: #d9d1bf;
+  --border-strong: #b8ae9b;
+  --focus: #6e5414;
+  --shadow-2: 0 1px 2px rgb(10 16 36 / 0.12), 0 10px 28px rgb(10 16 36 / 0.16);
+  --shadow-3: 0 -8px 40px rgb(10 16 36 / 0.18);
+  --sheet-scrim: rgb(236 230 216 / 0.78);
+  --grain-opacity: 0;
+  color-scheme: light;
+}
+
+/* "Auto": identical to proof under a light OS preference when data-theme is "auto". */
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --bg: #f5f1e8;
+    --bg-elevated: #ece6d8;
+    --surface: #fbf9f3;
+    --surface-2: #e4dccb;
+    --ink: #0a1024;
+    --ink-muted: #414b66;
+    --ink-faint: #8a93ab;
+    --accent: #745816;
+    --accent-ink: #f5f1e8;
+    --accent-2: #9e2f1c;
+    --success: #24634a;
+    --border: #d9d1bf;
+    --border-strong: #b8ae9b;
+    --focus: #6e5414;
+    --shadow-2: 0 1px 2px rgb(10 16 36 / 0.12), 0 10px 28px rgb(10 16 36 / 0.16);
+    --shadow-3: 0 -8px 40px rgb(10 16 36 / 0.18);
+    --sheet-scrim: rgb(236 230 216 / 0.78);
+    --grain-opacity: 0;
+    color-scheme: light;
+  }
+}
+
+/* The Evening Turn: a token swap inside the active theme, driven by the app's evening hour. */
+:root.evening {
+  --bg: var(--bg-elevated);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 120ms;
+    --dur-slow: 120ms;
+  }
+}
+:root.reduced-motion {
+  --dur-fast: 0ms;
+  --dur-base: 120ms;
+  --dur-slow: 120ms;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --grain-opacity: 0;
+    --sheet-blur: 0px;
+  }
+}

@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -13,7 +12,16 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
-    tailwindcss(),
+    {
+      // Production-only CSP (the dev server injects inline scripts for HMR).
+      name: "nocturne-csp",
+      apply: "build",
+      transformIndexHtml: (html) =>
+        html.replace(
+          "<title>",
+          `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self'; object-src 'none'; base-uri 'self'" />\n    <title>`,
+        ),
+    },
     // No service worker inside the Capacitor WebView: skip the plugin entirely on the Android build.
     ...(isAndroid
       ? []
@@ -47,5 +55,6 @@ export default defineConfig({
           }),
         ]),
   ],
+  resolve: isAndroid ? { alias: { "virtual:pwa-register": "/src/platform/stubs/pwa-register.ts" } } : {},
   build: { target: "es2022", sourcemap: false },
 });

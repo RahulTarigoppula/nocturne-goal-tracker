@@ -11,7 +11,8 @@
     "rules": {
       "recommended": true,
       "a11y": { "noStaticElementInteractions": "off", "useKeyWithClickEvents": "off" },
-      "style": { "noNonNullAssertion": "off" }
+      "style": { "noNonNullAssertion": "off", "noDescendingSpecificity": "off" },
+      "complexity": { "noImportantStyles": "off" }
     }
   },
   "css": { "parser": { "tailwindDirectives": true } },
