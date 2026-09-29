@@ -100,8 +100,13 @@ function match(pattern: string, pathname: string): Record<string, string> | null
   for (let i = 0; i < a.length; i++) {
     const p = a[i] as string;
     const v = b[i] as string;
-    if (p.startsWith(":")) params[p.slice(1)] = decodeURIComponent(v);
-    else if (p !== v) return null;
+    if (p.startsWith(":")) {
+      try {
+        params[p.slice(1)] = decodeURIComponent(v);
+      } catch {
+        return null; // malformed escape: treat as unmatched rather than blanking the app
+      }
+    } else if (p !== v) return null;
   }
   return params;
 }

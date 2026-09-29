@@ -142,7 +142,17 @@ export const EntryRow = memo(function EntryRow(p: Props) {
       if (right) p.onStrike(e);
       else if (left) p.onWhen(e);
     }
-    if (s.mode !== "lift") reset();
+    if (s.mode === "lift") {
+      // A hold released without moving never starts Motion's drag, so onDragEnd will not fire.
+      window.setTimeout(() => {
+        if (g.current.mode === "lift") {
+          reset();
+          setLifted(false);
+        }
+      }, 0);
+      return;
+    }
+    reset();
   };
 
   const onDragEnd = () => {

@@ -5,6 +5,7 @@ import { spawnNext } from "../engine/recurrence";
 import { issueStreak } from "../engine/streaks";
 import type {
   Bucket,
+  ChecklistItem,
   Completion,
   DayKey,
   Entry,
@@ -71,6 +72,9 @@ function emit(kind: WriteKind) {
     }
   }
 }
+
+/** Announce a bulk replace (import or merge) so listeners re-run roll-forward and re-sync reminders. */
+export const notifyImported = (): void => emit("import");
 
 async function bumpRevision(): Promise<number> {
   const row = await db.meta.get("revision");
@@ -178,6 +182,18 @@ export async function updateEntry(id: Id, patch: EntryPatch): Promise<void> {
     if (next.title.trim() === "") next.title = e.title;
     await db.entries.put(next);
     if (e.when && patch.evening !== undefined && patch.evening !== e.evening) await recomputeIssue(e.when, now);
+    await bumpRevision();
+  });
+  emit("entries");
+}
+
+/** Read-modify-write of the checklist inside one transaction, so rapid ticks never undo each other. */
+export async function updateChecklist(id: Id, fn: (c: ChecklistItem[]) => ChecklistItem[]): Promise<void> {
+  const now = clock.now();
+  await db.transaction("rw", db.entries, db.meta, async () => {
+    const e = await db.entries.get(id);
+    if (!e) return;
+    await db.entries.put({ ...e, checklist: fn(e.checklist), updatedAt: now });
     await bumpRevision();
   });
   emit("entries");
@@ -507,6 +523,21 @@ export async function saveSettings(patch: Partial<Settings>): Promise<Settings> 
   });
   emit("settings");
   return s;
+}
+
+/**
+ * Record a successful backup. Reads the current backup settings inside the transaction (so a toggle made
+ * during the push survives) and does NOT bump the revision, so "unchanged since the last backup" can hold.
+ */
+export async function markBackedUp(patch: { gistId?: string; at: number }): Promise<void> {
+  await db.transaction("rw", db.settings, db.meta, async () => {
+    const cur = await getSettings();
+    const revision = await getRevision();
+    const backup = { ...cur.backup, lastBackupAt: patch.at, lastBackupRevision: revision };
+    if (patch.gistId) backup.gistId = patch.gistId;
+    await db.settings.put({ ...cur, backup, key: "settings" });
+  });
+  emit("settings");
 }
 
 /* ------------------------------------------------------------------ first launch */

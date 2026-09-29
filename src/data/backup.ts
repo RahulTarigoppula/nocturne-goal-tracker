@@ -3,7 +3,7 @@ import { mergeSnapshots, type Snapshot } from "../engine/merge";
 import type { Completion, Entry, Habit, Issue, Settings } from "../engine/types";
 import { clock } from "./clock";
 import { db, SCHEMA_VERSION } from "./db";
-import { getRevision } from "./repo";
+import { getRevision, notifyImported } from "./repo";
 
 export interface BackupFile {
   format: "nocturne-backup";
@@ -115,6 +115,7 @@ export async function importAll(file: BackupFile, onProgress?: Progress): Promis
     await db.meta.put({ key: "revision", value: Math.max(file.revision, 0) + 1 });
   });
   onProgress?.(total, total);
+  notifyImported();
 }
 
 /** Merge a remote backup into local data (per-record last-writer-wins). */
@@ -133,6 +134,7 @@ export async function mergeRemote(file: BackupFile): Promise<Snapshot> {
     await db.meta.put({ key: "revision", value: merged.revision });
     await db.meta.put({ key: "lastSyncAt", value: clock.now() });
   });
+  notifyImported();
   return merged;
 }
 

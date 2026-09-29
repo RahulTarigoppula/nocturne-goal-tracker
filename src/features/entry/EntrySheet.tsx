@@ -3,7 +3,7 @@ import { useUi } from "../../app/store";
 import { Sheet } from "../../components/ui/Sheet";
 import { newId } from "../../data/clock";
 import { useDayEntries, useEntry } from "../../data/queries";
-import { deleteEntry, type EntryPatch, reopen, updateEntry } from "../../data/repo";
+import { deleteEntry, type EntryPatch, reopen, updateChecklist, updateEntry } from "../../data/repo";
 import { atLocal, hhmm, localKey, shortDate } from "../../engine/daykey";
 import { deriveSections, pad2 } from "../../engine/ordering";
 import { describe } from "../../engine/recurrence";
@@ -84,7 +84,11 @@ export function EntrySheet({ id }: { id: string }) {
       <div className="notes">
         <NotesField entry={entry} onSave={(notes) => save({ notes })} />
       </div>
-      <Checklist entry={entry} folio={folioText} onSave={(checklist) => save({ checklist })} />
+      <Checklist
+        entry={entry}
+        folio={folioText}
+        onSave={(fn) => updateChecklist(entry.id, fn).catch(() => setSaveError(true))}
+      />
 
       <div className="mono-table">
         <button type="button" className="r" onClick={() => useUi.getState().open({ kind: "when", id: entry.id })}>
@@ -248,18 +252,30 @@ function Row(p: { label: string; value: string; sup?: string | undefined; open: 
   );
 }
 
+/** Debounced autosave that also flushes on unmount (sheets unmount on close; blur does not fire). */
 function useDebounced<T>(value: T, onSave: (v: T) => void, delay = 300) {
   const first = useRef(true);
   const saveRef = useRef(onSave);
+  const pending = useRef<{ v: T } | null>(null);
   saveRef.current = onSave;
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
-    const t = window.setTimeout(() => saveRef.current(value), delay);
+    pending.current = { v: value };
+    const t = window.setTimeout(() => {
+      pending.current = null;
+      saveRef.current(value);
+    }, delay);
     return () => clearTimeout(t);
   }, [value, delay]);
+  useEffect(
+    () => () => {
+      if (pending.current) saveRef.current(pending.current.v);
+    },
+    [],
+  );
 }
 
 function TitleField({ entry, onSave }: { entry: Entry; onSave: (t: string) => void }) {
@@ -304,20 +320,28 @@ function NotesField({ entry, onSave }: { entry: Entry; onSave: (t: string) => vo
         if (lines.length > 1 && v.trim() === "") {
           e.preventDefault();
           const items: ChecklistItem[] = lines.map((l) => ({ id: newId(), text: l, done: false }));
-          updateEntry(entry.id, { checklist: [...entry.checklist, ...items] });
+          updateChecklist(entry.id, (cur) => [...cur, ...items]);
         }
       }}
     />
   );
 }
 
-function Checklist({ entry, folio, onSave }: { entry: Entry; folio: string; onSave: (c: ChecklistItem[]) => void }) {
+function Checklist({
+  entry,
+  folio,
+  onSave,
+}: {
+  entry: Entry;
+  folio: string;
+  onSave: (fn: (c: ChecklistItem[]) => ChecklistItem[]) => void;
+}) {
   const [draft, setDraft] = useState("");
   const items = entry.checklist;
   const add = () => {
     const t = draft.trim();
     if (!t) return;
-    onSave([...items, { id: newId(), text: t, done: false }]);
+    onSave((cur) => [...cur, { id: newId(), text: t, done: false }]);
     setDraft("");
   };
   return (
@@ -332,7 +356,7 @@ function Checklist({ entry, folio, onSave }: { entry: Entry; folio: string; onSa
             className="boxbtn"
             aria-pressed={c.done}
             aria-label={`${c.done ? "Reopen" : "Close"} ${c.text}`}
-            onClick={() => onSave(items.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))}
+            onClick={() => onSave((cur) => cur.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)))}
           >
             <span className={`box${c.done ? " on" : ""}`} />
           </button>
@@ -341,7 +365,7 @@ function Checklist({ entry, folio, onSave }: { entry: Entry; folio: string; onSa
             type="button"
             className="x"
             aria-label={`Remove ${c.text}`}
-            onClick={() => onSave(items.filter((x) => x.id !== c.id))}
+            onClick={() => onSave((cur) => cur.filter((x) => x.id !== c.id))}
           >
             ×
           </button>

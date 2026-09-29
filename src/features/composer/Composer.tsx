@@ -73,18 +73,28 @@ export function Composer({
   const file = async (evening: boolean) => {
     if (!parsed) return;
     const when = parsed.when ?? (defaultWhen === null ? undefined : (defaultWhen ?? today));
-    // Clear first: typing may continue while the write lands.
+    // Clear first: typing may continue while the write lands. A failed write puts the text back.
+    const typed = text;
+    const ignoredBefore = ignored;
     setText("");
     setIgnored(new Set());
-    const e = await addEntry({
-      title: parsed.title,
-      when,
-      evening: evening || parsed.evening,
-      tags: parsed.tags,
-      deadline: parsed.deadline,
-      recurrence: parsed.recurrence,
-      reminderAt: parsed.reminderAt,
-    });
+    let e: Awaited<ReturnType<typeof addEntry>>;
+    try {
+      e = await addEntry({
+        title: parsed.title,
+        when,
+        evening: evening || parsed.evening,
+        tags: parsed.tags,
+        deadline: parsed.deadline,
+        recurrence: parsed.recurrence,
+        reminderAt: parsed.reminderAt,
+      });
+    } catch {
+      setText((cur) => cur || typed);
+      setIgnored(ignoredBefore);
+      useUi.getState().say("Could not save the entry");
+      return;
+    }
     setUndo(null);
     onFiled?.(e.when);
   };

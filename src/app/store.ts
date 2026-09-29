@@ -52,10 +52,16 @@ export const useUi = create<UiState>((set, get) => ({
   },
   select: (id) => set({ selectedEntryId: id }),
   open: (sheet) =>
-    set({
+    set((s) => ({
       openSheet: sheet,
-      returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
-    }),
+      // Opening a sheet from a sheet keeps the original return target (the inner one unmounts).
+      returnFocus:
+        s.openSheet && s.returnFocus
+          ? s.returnFocus
+          : document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null,
+    })),
   close: () => {
     const el = get().returnFocus;
     set({ openSheet: null, returnFocus: null });

@@ -1,6 +1,6 @@
 import { exportAll } from "./backup";
 import { pushBackup } from "./gist";
-import { getRevision, getSettings, saveSettings } from "./repo";
+import { getRevision, getSettings, markBackedUp } from "./repo";
 
 const SIX_HOURS = 6 * 3_600_000;
 
@@ -20,7 +20,7 @@ export async function maybeAutoBackup(loadToken: () => Promise<string | null>, n
   if (!token) return false;
   try {
     await pushBackup(token, await exportAll(__APP_VERSION__), s.backup.gistId);
-    await saveSettings({ backup: { ...s.backup, lastBackupAt: now, lastBackupRevision: await getRevision() } });
+    await markBackedUp({ at: now });
     return true;
   } catch {
     return false;

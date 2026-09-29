@@ -187,6 +187,26 @@ describe("entries", () => {
     await repo.updateEntry("missing", { notes: "x" });
   });
 
+  it("checklist edits compose inside the transaction", async () => {
+    const [a] = await todays();
+    await Promise.all([
+      repo.updateChecklist(a!.id, (c) => [...c, { id: "x", text: "One", done: false }]),
+      repo.updateChecklist(a!.id, (c) => [...c, { id: "y", text: "Two", done: false }]),
+    ]);
+    await Promise.all([
+      repo.updateChecklist(a!.id, (c) => c.map((i) => (i.id === "x" ? { ...i, done: true } : i))),
+      repo.updateChecklist(a!.id, (c) => c.map((i) => (i.id === "y" ? { ...i, done: true } : i))),
+    ]);
+    expect((await db.entries.get(a!.id))?.checklist.map((c) => c.done)).toEqual([true, true]);
+  });
+
+  it("markBackedUp records the current revision without bumping it", async () => {
+    const r = await repo.getRevision();
+    await repo.markBackedUp({ gistId: "g", at: 5 });
+    expect(await repo.getRevision()).toBe(r);
+    expect((await repo.getSettings()).backup).toMatchObject({ gistId: "g", lastBackupAt: 5, lastBackupRevision: r });
+  });
+
   it("rollover moves yesterday's open entries onto today as overdue", async () => {
     const [a] = await todays();
     await repo.strike(a!.id);

@@ -10,7 +10,7 @@ import {
 } from "../../data/backup";
 import { GistError, pullBackup, pushBackup, verify } from "../../data/gist";
 import { useSettings } from "../../data/queries";
-import { getRevision, saveSettings } from "../../data/repo";
+import { markBackedUp, saveSettings } from "../../data/repo";
 import { localKey } from "../../engine/daykey";
 import type { Settings } from "../../engine/types";
 import { isNative } from "../../platform";
@@ -81,9 +81,7 @@ export function BackupPanel() {
       setStatus({ tone: "muted", text: "Printing to the gist…" });
       const file = await exportAll(version);
       const id = await pushBackup(t, file, s.backup.gistId);
-      await saveSettings({
-        backup: { ...s.backup, gistId: id, lastBackupAt: Date.now(), lastBackupRevision: await getRevision() },
-      });
+      await markBackedUp({ gistId: id, at: Date.now() });
       setStatus(null);
     } catch (e) {
       setStatus({
@@ -98,7 +96,7 @@ export function BackupPanel() {
       setStatus({ tone: "muted", text: "Reading the gist…" });
       const text = await pullBackup(t, s.backup.gistId);
       await mergeRemote(parseBackup(text));
-      await saveSettings({ backup: { ...s.backup, lastBackupAt: Date.now() } });
+      await markBackedUp({ at: Date.now() });
       scheduleSync();
       setStatus({ tone: "muted", text: "Merged. Newer edits on either side were kept." });
     } catch (e) {

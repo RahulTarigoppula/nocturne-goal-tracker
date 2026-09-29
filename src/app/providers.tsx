@@ -43,10 +43,16 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
     tick();
     const id = window.setInterval(tick, 60_000);
     const onVis = () => document.visibilityState === "visible" && tick();
+    const onForce = () => {
+      lastToday.current = null; // re-run the roll-forward (after an import, a merge or a resume)
+      tick();
+    };
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("nocturne:tick", onForce);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("nocturne:tick", onForce);
     };
   }, [settings]);
 
@@ -80,6 +86,7 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
     let asked = false;
     const off = onWrite((kind) => {
       if (kind !== "issues") scheduleSync();
+      if (kind === "import") window.dispatchEvent(new Event("nocturne:tick"));
       if (!asked && kind === "entries" && !isNative() && navigator.storage?.persist) {
         asked = true;
         navigator.storage.persist().catch(() => {});
@@ -103,10 +110,7 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
   // Platform hooks (resume, deep links, back button) and the audio unlock gesture.
   useEffect(() => {
     installSystemHooks({
-      onResume: () => {
-        const s = useUi.getState();
-        s.setNow(clock.now(), s.today ?? todayKey(new Date(), 3));
-      },
+      onResume: () => window.dispatchEvent(new Event("nocturne:tick")),
       navigate: (hash) => navRef.current(hash),
       onBack: () => {
         if (useUi.getState().openSheet) {

@@ -33,6 +33,8 @@ export function FrontPage() {
   const issues = useIssues();
   const actions = useEntryActions();
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
   const [instant, setInstant] = useState<Set<string>>(new Set());
   const [params, setParams] = useSearchParams();
 
@@ -73,7 +75,7 @@ export function FrontPage() {
 
   const onStrike = useCallback(
     (e: Entry) => {
-      if (e.status === "done") return;
+      if (e.status === "done" || pendingRef.current.has(e.id)) return;
       const folio = view?.folios.get(e.id) ?? null;
       setPending((s) => new Set(s).add(e.id));
       actions.strike(e, folio);
@@ -103,6 +105,11 @@ export function FrontPage() {
       if (!view || useUi.getState().openSheet) return;
       const t = ev.target as HTMLElement;
       if (t.closest("input, textarea, select, [contenteditable]")) return;
+      if (ev.ctrlKey || ev.metaKey) return;
+      if (ev.altKey && ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
+      // Arrow keys only drive the list when focus is already in it; otherwise they scroll.
+      const inList = !!t.closest(".entries");
+      if ((ev.key === "ArrowUp" || ev.key === "ArrowDown") && !inList) return;
       const all = [...view.today, ...view.evening];
       const openRows = all.filter((e) => e.status === "open");
       const sel = useUi.getState().selectedEntryId;
