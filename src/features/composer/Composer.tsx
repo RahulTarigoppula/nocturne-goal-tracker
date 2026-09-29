@@ -40,7 +40,7 @@ export function Composer({
 }: Props) {
   const [text, setText] = useState("");
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
-  const [, force] = useState(0);
+  const [chronoReady, force] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const undo = useUi((s) => s.undo);
   const setUndo = useUi((s) => s.setUndo);
@@ -55,18 +55,20 @@ export function Composer({
     }
   }, [focusTick]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chronoReady re-parses once the lazy chrono chunk lands
   const parsed = useMemo(
     () => (text.trim() ? parseQuickAdd(text, new Date(), chronoParse, { ignore: ignored, rolloverHour }) : null),
-    [text, ignored, rolloverHour],
+    [text, ignored, rolloverHour, chronoReady],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chronoReady re-parses once the lazy chrono chunk lands
   const chips: (Chip & { off: boolean })[] = useMemo(() => {
     if (!text.trim()) return [];
     const on = parsed?.chips ?? [];
     // Re-derive discarded chips from an unfiltered parse so they stay visible (muted, struck).
     const all = parseQuickAdd(text, new Date(), chronoParse, { rolloverHour }).chips;
     return all.map((c) => ({ ...c, off: !on.some((o) => chipKey(o) === chipKey(c)) }));
-  }, [text, parsed, rolloverHour]);
+  }, [text, parsed, rolloverHour, chronoReady]);
 
   const file = async (evening: boolean) => {
     if (!parsed) return;

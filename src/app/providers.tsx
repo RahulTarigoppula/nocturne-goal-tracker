@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import { clock } from "../data/clock";
-import { useSettings } from "../data/queries";
 import { ensureSeed, onWrite, rollForward } from "../data/repo";
 import { isEvening, todayKey } from "../engine/daykey";
 import { unlockAudio } from "../features/sound/synth";
@@ -8,10 +7,11 @@ import { isNative } from "../platform";
 import { scheduleSync, syncSchedules } from "../platform/notifications";
 import { installSystemHooks, setStatusBar } from "../platform/system";
 import { useUi } from "./store";
+import { useEffectiveSettings } from "./useEffectiveSettings";
 
 /** Clock, rollover, theme/evening/motion classes, platform hooks, write side effects. */
 export function Providers({ children, navigate }: { children: ReactNode; navigate: (hash: string) => void }) {
-  const settings = useSettings();
+  const settings = useEffectiveSettings();
   const lastToday = useRef<string | null>(null);
 
   // First launch seed + storage health.

@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useUi } from "../../app/store";
-import { useDayEntries, useIssue, useIssues, useSettings } from "../../data/queries";
+import { useEffectiveSettings } from "../../app/useEffectiveSettings";
+import { useDayEntries, useIssue, useIssues } from "../../data/queries";
 import { reorder, saveSettings } from "../../data/repo";
 import { greeting, issueNumber } from "../../engine/daykey";
 import { deriveSections } from "../../engine/ordering";
@@ -26,7 +27,7 @@ export function FrontPage() {
   const selectedId = useUi((s) => s.selectedEntryId);
   const storageError = useUi((s) => s.storageError);
   const justClosed = useUi((s) => (today ? s.colophonJustClosed[today] : undefined));
-  const settings = useSettings();
+  const settings = useEffectiveSettings();
   const entries = useDayEntries(today);
   const issue = useIssue(today);
   const issues = useIssues();
@@ -64,10 +65,11 @@ export function FrontPage() {
   }, [issue, today, settings]);
 
   const view = useMemo(() => {
-    if (!entries) return null;
-    const shaped = entries.map((e) => (pending.has(e.id) ? { ...e, status: "open" as const } : e));
+    const list = entries ?? (storageError ? [] : undefined);
+    if (!list) return null;
+    const shaped = list.map((e) => (pending.has(e.id) ? { ...e, status: "open" as const } : e));
     return deriveSections(shaped);
-  }, [entries, pending]);
+  }, [entries, pending, storageError]);
 
   const onStrike = useCallback(
     (e: Entry) => {

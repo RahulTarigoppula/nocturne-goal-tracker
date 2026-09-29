@@ -2,7 +2,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { DigitRoll } from "../components/ui/DigitRoll";
-import { useDaysWithEntries, useIssue, useSettings } from "../data/queries";
+import { useDaysWithEntries, useIssue } from "../data/queries";
 import {
   addDays,
   daysInMonth,
@@ -17,6 +17,7 @@ import {
 import { DayGauge, Numeral } from "../features/front-page/Masthead";
 import { SheetHost } from "./SheetHost";
 import { useUi } from "./store";
+import { useEffectiveSettings } from "./useEffectiveSettings";
 
 const TABS = [
   { to: "/", label: "Today" },
@@ -89,7 +90,7 @@ function MiniCalendar({ today }: { today: ReturnType<typeof toKey> }) {
 function Rail() {
   const today = useUi((s) => s.today);
   const now = useUi((s) => s.now);
-  const settings = useSettings();
+  const settings = useEffectiveSettings();
   const issue = useIssue(today);
   if (!today || !settings) return <aside className="rail" />;
   const issueNo = issue?.issueNo ?? issueNumber(today, settings.firstIssueDay);
@@ -123,7 +124,7 @@ function Rail() {
 }
 
 export function Shell() {
-  const settings = useSettings();
+  const settings = useEffectiveSettings();
   const today = useUi((s) => s.today);
   const announce = useUi((s) => s.announce);
   const navigate = useNavigate();
