@@ -3,3 +3,4 @@ android/gradlew text eol=lf
 *.sh text eol=lf
 *.png binary
 *.woff2 binary
+*.bat text eol=crlf
