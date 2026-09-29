@@ -60,7 +60,7 @@ export async function installSystemHooks(h: SystemHooks): Promise<void> {
     const extra = a.notification.extra as { entryId?: string; kind?: string } | undefined;
     const id = extra?.entryId;
     if (!id) {
-      h.navigate("#/");
+      h.navigate(extra?.kind === "habit" ? "#/ledger" : "#/");
       return;
     }
     if (a.actionId === "done") await strikeQuietly(id);

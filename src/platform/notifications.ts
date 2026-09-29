@@ -1,7 +1,14 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { db } from "../data/db";
 import { currentToday, getSettings } from "../data/repo";
-import { diffSchedules, planNotifications, REVIEW_ID, reviewBody } from "../engine/notifications-plan";
+import {
+  diffHabitSchedules,
+  diffSchedules,
+  planHabitReminders,
+  planNotifications,
+  REVIEW_ID,
+  reviewBody,
+} from "../engine/notifications-plan";
 import { isNative } from "./index";
 
 export type PermissionState = "granted" | "denied" | "prompt" | "unsupported";
@@ -101,11 +108,34 @@ export async function syncSchedules(): Promise<void> {
   await setup();
   const s = await getSettings();
   const desired = planNotifications(await db.entries.toArray(), s, Date.now());
-  const pending = (await LocalNotifications.getPending()).notifications.map((n) => ({
-    id: n.id,
-    at: (n.extra as { at?: number } | undefined)?.at,
-  }));
+  const all = (await LocalNotifications.getPending()).notifications;
+  type Extra = { at?: number; kind?: string; hour?: number; minute?: number } | undefined;
+  const pending = all
+    .filter((n) => (n.extra as Extra)?.kind !== "habit")
+    .map((n) => ({ id: n.id, at: (n.extra as Extra)?.at }));
   const { cancel, schedule } = diffSchedules(desired, pending);
+
+  // Habit reminders: repeating daily `on:` schedules, tracked by kind "habit".
+  const habitPlan = planHabitReminders(await db.habits.toArray(), s);
+  const habitPending = all
+    .filter((n) => (n.extra as Extra)?.kind === "habit")
+    .map((n) => ({ id: n.id, hour: (n.extra as Extra)?.hour, minute: (n.extra as Extra)?.minute }));
+  const habitDiff = diffHabitSchedules(habitPlan, habitPending);
+  if (habitDiff.cancel.length)
+    await LocalNotifications.cancel({ notifications: habitDiff.cancel.map((id) => ({ id })) });
+  if (habitDiff.schedule.length) {
+    await LocalNotifications.schedule({
+      notifications: habitDiff.schedule.map((p) => ({
+        id: p.id,
+        title: p.title,
+        body: p.body,
+        extra: { kind: "habit", habitId: p.habitId, hour: p.hour, minute: p.minute },
+        schedule: { on: { hour: p.hour, minute: p.minute }, allowWhileIdle: true },
+        smallIcon: "ic_stat_nocturne",
+        channelId: "reminders",
+      })),
+    });
+  }
   if (cancel.length) await LocalNotifications.cancel({ notifications: cancel.map((id) => ({ id })) });
   if (schedule.length) {
     await LocalNotifications.schedule({

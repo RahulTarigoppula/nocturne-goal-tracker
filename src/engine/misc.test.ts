@@ -3,10 +3,17 @@ import { colophonLines, countWord } from "./colophon";
 import { makeId, seededBytes } from "./ids";
 import { deriveIssue, shouldPrintColophon } from "./issue";
 import { mergeSnapshots, type Snapshot, TOMBSTONE_TTL } from "./merge";
-import { diffSchedules, notifId, planNotifications, reviewBody } from "./notifications-plan";
+import {
+  diffHabitSchedules,
+  diffSchedules,
+  notifId,
+  planHabitReminders,
+  planNotifications,
+  reviewBody,
+} from "./notifications-plan";
 import { deriveSections, keyAtEnd, keyBetween, keyForMove, needsRenumber, renumber } from "./ordering";
 import { inQuietHours, scaleHz } from "./scale";
-import type { DayKey, Entry, Settings } from "./types";
+import type { DayKey, Entry, Habit, Settings } from "./types";
 
 const k = (s: string) => s as DayKey;
 const entry = (over: Partial<Entry>): Entry => ({
@@ -249,5 +256,46 @@ describe("climbing scale", () => {
     expect(inQuietHours(8, 23, 8)).toBe(false);
     expect(inQuietHours(12, 9, 17)).toBe(true);
     expect(inQuietHours(12, 9, 9)).toBe(false);
+  });
+});
+
+describe("habit reminders", () => {
+  const habit = (over: Partial<Habit>): Habit => ({
+    id: "h1",
+    title: "Run",
+    frequency: { times: 1, per: "day" },
+    freezes: 0,
+    order: "a0",
+    createdAt: 0,
+    updatedAt: 0,
+    ...over,
+  });
+  it("plans only live habits with a time; private mode redacts", () => {
+    const hs = [
+      habit({ reminder: { hour: 7, minute: 30 } }),
+      habit({ id: "h2" }),
+      habit({ id: "h3", reminder: { hour: 8, minute: 0 }, archivedAt: 1 }),
+    ];
+    const p = planHabitReminders(hs, { privateReminders: false });
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatchObject({ hour: 7, minute: 30, title: "Run", habitId: "h1" });
+    expect(p[0]?.id).toBe(notifId("habit:h1"));
+    expect(planHabitReminders(hs, { privateReminders: true })[0]?.title).toBe("Nocturne");
+  });
+  it("diff keeps unchanged times and replaces moved ones", () => {
+    const desired = planHabitReminders(
+      [habit({ reminder: { hour: 7, minute: 30 } }), habit({ id: "h2", reminder: { hour: 9, minute: 0 } })],
+      {
+        privateReminders: false,
+      },
+    );
+    const [a, b] = desired;
+    const { cancel, schedule } = diffHabitSchedules(desired, [
+      { id: a!.id, hour: 7, minute: 30 },
+      { id: b!.id, hour: 8, minute: 0 },
+      { id: 99, hour: 6, minute: 0 },
+    ]);
+    expect(cancel.sort()).toEqual([b!.id, 99].sort());
+    expect(schedule.map((s) => s.id)).toEqual([b!.id]);
   });
 });

@@ -77,7 +77,7 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
   useEffect(() => {
     let asked = false;
     const off = onWrite((kind) => {
-      if (kind === "entries" || kind === "settings" || kind === "import") scheduleSync();
+      if (kind !== "issues") scheduleSync();
       if (!asked && kind === "entries" && !isNative() && navigator.storage?.persist) {
         asked = true;
         navigator.storage.persist().catch(() => {});

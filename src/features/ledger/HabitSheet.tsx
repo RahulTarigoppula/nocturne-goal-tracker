@@ -7,6 +7,7 @@ import { archiveHabit, deleteHabit, freezeDay, setFrequency, updateHabit } from 
 import { addDays, shortDate } from "../../engine/daykey";
 import { freezeAvailable, scheduled } from "../../engine/streaks";
 import type { DayKey, Weekday } from "../../engine/types";
+import { isNative } from "../../platform";
 
 const DAYS: { d: Weekday; l: string }[] = [
   { d: 1, l: "Mon" },
@@ -17,6 +18,51 @@ const DAYS: { d: Weekday; l: string }[] = [
   { d: 6, l: "Sat" },
   { d: 0, l: "Sun" },
 ];
+
+function HabitReminder({
+  value,
+  onChange,
+}: {
+  value: { hour: number; minute: number } | undefined;
+  onChange: (r: { hour: number; minute: number } | undefined) => void;
+}) {
+  const [time, setTime] = useState(
+    value ? `${String(value.hour).padStart(2, "0")}:${String(value.minute).padStart(2, "0")}` : "08:00",
+  );
+  return (
+    <div className="mono-table" style={{ marginTop: 0, borderTop: 0 }}>
+      <div className="r" style={{ gridTemplateColumns: "96px 1fr auto" }}>
+        <span className="k">Reminder</span>
+        <input
+          type="time"
+          className="field"
+          aria-label="Habit reminder time"
+          style={{ width: 120, fontFamily: "var(--font-mono)" }}
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+        />
+        <span style={{ display: "inline-flex", gap: 8 }}>
+          <button
+            type="button"
+            className="btn-text"
+            onClick={() => {
+              const [hour = 8, minute = 0] = time.split(":").map(Number);
+              onChange({ hour, minute });
+            }}
+          >
+            {value ? "Update" : "Set"}
+          </button>
+          {value && (
+            <button type="button" className="btn-text muted" onClick={() => onChange(undefined)}>
+              Off
+            </button>
+          )}
+        </span>
+      </div>
+      {!isNative() && value && <p className="footnote">Habit reminders ring on the Android app.</p>}
+    </div>
+  );
+}
 
 export function HabitSheet({ id }: { id: string }) {
   const habits = useHabits();
@@ -107,6 +153,7 @@ export function HabitSheet({ id }: { id: string }) {
           </div>
         )}
       </div>
+      <HabitReminder value={h.reminder} onChange={(reminder) => updateHabit(h.id, { reminder })} />
       <p className="footnote">A miss lowers the ring a little; it never drops to zero.</p>
       {!weekly && (
         <p className="footnote warn">
