@@ -2,6 +2,8 @@
 
 Written 2026-09-06. Follows `_shared/DECISIONS.md` D2 (GitHub Pages, repo `nocturne`), D3 (Capacitor 8 APK signed in GitHub Actions), D6 (repo layout), D9.1 ("Day 1 = live"). Shared assets referenced here: `_shared/templates/pages.yml`, `_shared/templates/android-release.yml`, `_shared/templates/app-build.gradle.snippet`, `_shared/scripts/make-keystore.sh`. **Nocturne has no Cloudflare Worker** (D8: proxy "none") — §4 explains why and what to do if that ever changes.
 
+> **2026-09-29 implementation notes:** the repo already contains `.github/workflows/{pages,ci,android-release}.yml`, the signing block in `android/app/build.gradle`, `.gitignore`/`.gitattributes` and `LICENSE`. Differences from this runbook: `capacitor.config.json` (not `.ts`), no Tailwind in `vite.config.ts`, the manual APK workflow builds a debug-signed APK when no keystore secrets exist, and tag builds refuse to run without them. The short version of §1–§9 is README → *Go live*.
+
 Shell conventions: PowerShell for `npm`/`git`/`gh`; **Git Bash** for `make-keystore.sh` (needs OpenSSL and `base64 -w0`).
 
 ---

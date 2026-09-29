@@ -1532,13 +1532,6 @@ textarea.field {
 .attribution p {
   margin: 0 0 var(--space-3);
 }
-.lucide {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.5;
-  color: var(--ink-muted);
-  flex-shrink: 0;
-}
 
 .edition-note {
   position: fixed;

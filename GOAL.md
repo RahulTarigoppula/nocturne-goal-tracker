@@ -3,7 +3,7 @@
 **Codename:** Nocturne · **Design:** The Evening Edition
 **Tagline:** *Your day, printed as a single issue.*
 
-Status: Planned — not started. Written 2026-09-06 against `_shared/DECISIONS.md`, `docs/RESEARCH.md` (verified) and `docs/DESIGN.md` (locked).
+Status: **v0.1.0 implemented 2026-09-29** — see `docs/IMPLEMENTATION-NOTES.md`; deploy steps in `README.md`. Written 2026-09-06 against `_shared/DECISIONS.md`, `docs/RESEARCH.md` (verified) and `docs/DESIGN.md` (locked).
 
 ---
 

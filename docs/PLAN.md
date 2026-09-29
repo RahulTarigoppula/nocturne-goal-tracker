@@ -2,6 +2,8 @@
 
 Written 2026-09-06. Follows `../_shared/DECISIONS.md` §D9 (day 1 = live; engine first; preview is the spec; weekend MVP path; no paid anything). Effort is in **evenings (≈ 2.5 h)** and **weekend days (≈ 6 h)** for one developer. Every task is ≤ half a day and has an acceptance criterion in *italics*.
 
+> **Build status (2026-09-29):** Phases 1–3 and the web half of Phases 4–5 are implemented; the MVP list and most v1 items are in the code (see `docs/IMPLEMENTATION-NOTES.md` §1 for the per-area table and §3 for gaps). What remains needs you: Phase 0's GitHub/keystore steps (README → *Go live*), the on-device Android checks (Phase 4), Linux-CI visual baselines and the one-week trial (Phase 5).
+
 Legend: `[ ]` todo · **DoD** = definition of done for the phase · ⚠ = risk.
 
 ---
