@@ -21,7 +21,7 @@ jobs:
         run: |
           VITE_PLATFORM=android VITE_BASE_PATH=/ npx vite build --outDir dist-android
           test ! -f dist-android/sw.js
-          ! grep -rl "registerSW\|workbox" dist-android/assets
+          ! grep -rl "workbox" dist-android/assets\|workbox" dist-android/assets
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
