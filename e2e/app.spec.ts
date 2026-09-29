@@ -255,3 +255,35 @@ for (const route of ["#/", "#/upcoming", "#/ledger", "#/issues", "#/colophon"]) 
     expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
   });
 }
+
+test("hold to reorder: the lifted row takes the lift styling and the new order persists", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "mouse-driven gesture test runs on desktop");
+  await open(page);
+  const titles = () => page.locator("main .entry .title-text").allInnerTexts();
+  await expect(page.locator("main .entry")).toHaveCount(3);
+  const before = await titles();
+  const row = page.locator("main .entry").nth(0);
+  const box = await row.boundingBox();
+  if (!box) throw new Error("no row");
+  const x = box.x + 200;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(320);
+  await expect(page.locator(".entry.lifted")).toHaveCount(1);
+  const radius = await page
+    .locator(".entry.lifted .entry-body")
+    .evaluate((e) => getComputedStyle(e).borderTopLeftRadius);
+  expect(radius).toBe("12px");
+  for (let i = 1; i <= 7; i++) await page.mouse.move(x, y + i * 10);
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const after = await titles();
+  expect(after[0]).toBe(before[1]);
+  expect(after[1]).toBe(before[0]);
+  await page.reload();
+  await expect.poll(titles).toEqual(after);
+});
