@@ -64,6 +64,12 @@ export function BackIssues() {
       ) : (
         blocks
       )}
+      <div className="section-head rh" style={{ marginTop: "var(--space-9)" }}>
+        <span>Colophon</span>
+      </div>
+      <Link to="/colophon" className="issue-row">
+        <div className="im">Theme, reminders, sound and backups ›</div>
+      </Link>
     </div>
   );
 }

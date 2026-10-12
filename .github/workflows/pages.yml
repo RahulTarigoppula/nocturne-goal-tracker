@@ -1,12 +1,13 @@
-# Deploy Nocturne to GitHub Pages. Prereq: Settings → Pages → Source = "GitHub Actions".
+# Build the web app and publish it to the gh-pages branch, which GitHub Pages serves at
+# https://<owner>.github.io/<repo>/. Lint and unit tests gate the deploy; e2e lives in ci.yml.
 name: Deploy to GitHub Pages
 on:
   push: { branches: [main] }
   workflow_dispatch:
-permissions: { contents: read, pages: write, id-token: write }
+permissions: { contents: write }
 concurrency: { group: pages, cancel-in-progress: false }
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -14,24 +15,23 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npx biome ci .
-      - run: npm run test:unit          # Vitest only; e2e lives in ci.yml
+      - run: npm run test:unit
       - name: Build (served from /<repo>/)
         run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
       - name: Bundle budget (initial JS ≤ 180 KB gzip)
         run: node scripts/size-gate.mjs
-      - name: SPA fallback for deep links (harmless with hash routing)
-        run: cp dist/index.html dist/404.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with: { path: dist }
-  deploy:
-    needs: build
-    runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: SPA fallback and no Jekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+      - name: Publish dist/ to gh-pages
+        run: |
+          cd dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

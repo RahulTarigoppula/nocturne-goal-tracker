@@ -20,7 +20,12 @@ export function Sheet({ label, labelledBy, onClose, tall, children }: Props) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const first = el.querySelector<HTMLElement>("[data-autofocus]") ?? el;
+    // On touch screens never focus a text field on open (it would raise the keyboard over the sheet);
+    // buttons are fine, and keyboard users get the field.
+    const target = el.querySelector<HTMLElement>("[data-autofocus]");
+    const isField = target?.matches("input, textarea") ?? false;
+    const fine = matchMedia("(pointer: fine)").matches;
+    const first = target && (fine || !isField) ? target : el;
     first.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

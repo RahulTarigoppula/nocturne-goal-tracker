@@ -29,12 +29,12 @@ describe("gist client", () => {
     fetchMock.mockResolvedValueOnce(res(201, { id: "abc123" }));
     const file = { format: "nocturne-backup" } as never;
     expect(await pushBackup("tok", file)).toBe("abc123");
-    const body = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string);
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
     expect(body.public).toBe(false);
     expect(Object.keys(body.files)).toEqual(["nocturne.json"]);
     fetchMock.mockResolvedValueOnce(res(200, { id: "abc123" }));
     expect(await pushBackup("tok", file, "abc123")).toBe("abc123");
-    expect((fetchMock.mock.calls[1]?.[1] as RequestInit).method).toBe("PATCH");
+    expect((fetchMock.mock.calls[1] as [string, RequestInit])[1].method).toBe("PATCH");
   });
 
   it("restores content, following raw_url when truncated", async () => {

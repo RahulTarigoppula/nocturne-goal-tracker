@@ -1,6 +1,7 @@
 import { App } from "@capacitor/app";
+import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { StatusBar, Style } from "@capacitor/status-bar";
+import { StatusBar } from "@capacitor/status-bar";
 import { db } from "../data/db";
 import * as repo from "../data/repo";
 import { isNative } from "./index";
@@ -71,12 +72,21 @@ export async function installSystemHooks(h: SystemHooks): Promise<void> {
   });
 }
 
-export async function setStatusBar(light: boolean): Promise<void> {
+/**
+ * System bars follow the page: light icons on Night, dark on Proof. On WebViews where Capacitor pads the
+ * content (Chromium < 140) the strip behind the status bar is painted with the current ground colour, so the
+ * evening turn and Proof never leave a mismatched band. Newer WebViews draw edge-to-edge under the bar.
+ */
+export async function setStatusBar(light: boolean, ground: string): Promise<void> {
   if (!isNative()) return;
   try {
-    await StatusBar.setOverlaysWebView({ overlay: true });
-    await StatusBar.setStyle({ style: light ? Style.Light : Style.Dark });
+    await SystemBars.setStyle({ style: light ? SystemBarsStyle.Light : SystemBarsStyle.Dark });
   } catch {
-    /* older WebViews */
+    /* plugin unavailable */
+  }
+  try {
+    if (/^#[0-9a-f]{6}$/i.test(ground)) await StatusBar.setBackgroundColor({ color: ground });
+  } catch {
+    /* no-op on edge-to-edge Android */
   }
 }

@@ -69,6 +69,13 @@ export function WeekSpread() {
         <span>Nocturne · Upcoming</span>
         <span>7 days</span>
       </div>
+      <Composer
+        today={today}
+        rolloverHour={settings.dayRolloverHour}
+        nextFolio={1}
+        placeholder="File for tomorrow, or name a day…"
+        defaultWhen={addDays(today, 1)}
+      />
       <div className="week">
         {days.map(({ k, s }) => {
           const list = [...s.today, ...s.evening];
@@ -110,13 +117,6 @@ export function WeekSpread() {
           );
         })}
       </div>
-      <Composer
-        today={today}
-        rolloverHour={settings.dayRolloverHour}
-        nextFolio={1}
-        placeholder="File for tomorrow…"
-        defaultWhen={addDays(today, 1)}
-      />
 
       <div className="section-head rh" style={{ marginTop: "var(--space-9)" }}>
         <span>Someday</span>

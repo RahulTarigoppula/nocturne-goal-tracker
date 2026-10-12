@@ -2,7 +2,8 @@
 
 *Your day, printed as a single issue.*
 
-**Status: v0.1.1 — the Android APK is built.** Install `release/nocturne-0.1.1.apk` on your phone (copy it over, open it, allow "install unknown apps" once). It was smoke-tested on an Android 14 emulator: launch, swipe-to-strike, quick add, a reminder notification with working Done/Snooze, and updating over the previous version with data kept. The web/PWA build and CI workflows are also here if you ever want them.
+**Web app:** https://rahultarigoppula.github.io/nocturne-goal-tracker/ — installable PWA, works offline.
+**Android:** download the APK from [Releases](https://github.com/RahulTarigoppula/nocturne-goal-tracker/releases/latest) (or `release/` in this repo), open it on the phone and allow "Install unknown apps" once.
 
 <p>
   <img src="docs/screenshots/front-page-night.png" width="240" alt="Front Page, Night, evening edition">

@@ -22,6 +22,8 @@ interface UiState {
   colophonJustClosed: Record<string, number>;
   announce: string;
   storageError: boolean;
+  /** First-launch setup finished (or failed); the Front Page waits for it so it never flashes empty. */
+  ready: boolean;
   composerFocusTick: number;
   setNow: (now: number, today: DayKey) => void;
   select: (id: Id | null) => void;
@@ -45,6 +47,7 @@ export const useUi = create<UiState>((set, get) => ({
   colophonJustClosed: {},
   announce: "",
   storageError: false,
+  ready: false,
   composerFocusTick: 0,
   setNow: (now, today) => {
     const prev = get().today;

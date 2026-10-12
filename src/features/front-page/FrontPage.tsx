@@ -26,6 +26,7 @@ export function FrontPage() {
   const now = useUi((s) => s.now);
   const selectedId = useUi((s) => s.selectedEntryId);
   const storageError = useUi((s) => s.storageError);
+  const ready = useUi((s) => s.ready);
   const justClosed = useUi((s) => (today ? s.colophonJustClosed[today] : undefined));
   const settings = useEffectiveSettings();
   const entries = useDayEntries(today);
@@ -149,7 +150,7 @@ export function FrontPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [view, onStrike]);
 
-  if (!today || !settings || !view) {
+  if (!ready || !today || !settings || !view) {
     return <div className="page" aria-busy="true" />;
   }
 

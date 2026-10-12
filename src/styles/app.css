@@ -22,6 +22,11 @@
   src: url("./fonts/geist-mono-latin-wght-normal.woff2") format("woff2-variations");
 }
 
+:root {
+  /* Capacitor 8 injects --safe-area-inset-* on Android; browsers use env(). */
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
 *,
 *::before,
 *::after {
@@ -87,8 +92,6 @@ button {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 .pages {
   flex: 1;
@@ -1883,4 +1886,15 @@ textarea.field {
 :root.kb-open .tabs,
 :root.kb-open .edition-note {
   display: none;
+}
+
+.rh-link {
+  color: inherit;
+  text-decoration: none;
+}
+.ledger-line .st {
+  align-items: center;
+}
+.ledger-line .st .roll {
+  vertical-align: middle;
 }

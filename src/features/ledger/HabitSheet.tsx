@@ -109,9 +109,9 @@ export function HabitSheet({ id }: { id: string }) {
             label="Schedule"
             value={weekly ? "week" : specific ? "days" : "daily"}
             options={[
-              { value: "daily", label: "Every day" },
+              { value: "daily", label: "Daily" },
               { value: "days", label: "Some days" },
-              { value: "week", label: "Times a week" },
+              { value: "week", label: "Weekly" },
             ]}
             onChange={async (v) => {
               if (v === "week") await setFrequency(h.id, { times: 3, per: "week" });

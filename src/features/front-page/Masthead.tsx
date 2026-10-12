@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "../../app/hash-router";
 import { DigitRoll } from "../../components/ui/DigitRoll";
 import { ariaValueText, dayGauge, monthName, parseKey, weekdayLong } from "../../engine/daykey";
 import type { DayKey } from "../../engine/types";
@@ -82,8 +83,12 @@ export function Masthead(p: MastheadProps) {
       <div className="page-head rh">
         <span className="rh-swap">
           <span className="df">
-            {p.lead ?? "Nocturne"} · No. <DigitRoll value={String(p.issueNo)} rollIn delay={60} /> ·{" "}
-            {weekdayLong(p.dayKey)}
+            {p.lead ?? (
+              <Link to="/colophon" className="rh-link" aria-label="Nocturne colophon: settings">
+                Nocturne
+              </Link>
+            )}{" "}
+            · No. <DigitRoll value={String(p.issueNo)} rollIn delay={60} /> · {weekdayLong(p.dayKey)}
           </span>
           <span className="ev" aria-hidden="true">
             Evening edition · No. {p.issueNo}

@@ -18,7 +18,9 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
 
   // First launch seed + storage health.
   useEffect(() => {
-    ensureSeed().catch(() => useUi.setState({ storageError: true }));
+    ensureSeed()
+      .then(() => useUi.setState({ ready: true }))
+      .catch(() => useUi.setState({ storageError: true, ready: true }));
   }, []);
 
   // Clock ticker: every 60 s and on visibility; a new day re-rolls the masthead and rolls overdue entries forward.
@@ -33,7 +35,9 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
         rollForward(today).catch(() => {});
       }
       const evening = isEvening(new Date(now), settings.eveningHour, settings.dayRolloverHour);
+      const was = document.documentElement.classList.contains("evening");
       document.documentElement.classList.toggle("evening", evening);
+      if (was !== evening) window.dispatchEvent(new Event("nocturne:chrome"));
       try {
         localStorage.setItem("nocturne.evening", evening ? "1" : "0");
       } catch {
@@ -65,20 +69,23 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
     const mq = matchMedia("(prefers-color-scheme: light)");
     const apply = () => {
       const light = settings.theme === "proof" || (settings.theme === "auto" && mq.matches);
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.setAttribute("content", getComputedStyle(root).getPropertyValue("--bg").trim());
-      setStatusBar(light);
+      const ground = getComputedStyle(root).getPropertyValue("--bg").trim();
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", ground);
+      setStatusBar(light, ground);
     };
     apply();
     mq.addEventListener("change", apply);
+    window.addEventListener("nocturne:chrome", apply);
     try {
       localStorage.setItem("nocturne.theme", settings.theme);
       localStorage.setItem("nocturne.motion", settings.motion);
     } catch {
       /* private mode */
     }
-    return () => mq.removeEventListener("change", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+      window.removeEventListener("nocturne:chrome", apply);
+    };
   }, [settings]);
 
   // Side effects of writes: notification re-sync (debounced) and one storage.persist() request on the web.

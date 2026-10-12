@@ -1,6 +1,12 @@
-# Build a SIGNED Capacitor APK in the cloud and attach it to a GitHub Release.
-#   git tag v1.0.0 && git push origin v1.0.0   → APK on the Releases page.
-# workflow_dispatch without the keystore secrets builds a debug-signed APK (installable, for testing only).
+# Android release.
+#   Tag push (git tag v0.1.2 && git push origin v0.1.2):
+#     creates the GitHub Release. If the keystore secrets are set it builds and signs the APK in CI;
+#     otherwise it attaches the locally signed APK committed at release/nocturne-<version>.apk
+#     (built with scripts/build-apk.ps1 and the owner's key, so it installs over earlier versions).
+#   Manual run (Actions → android-release → Run workflow):
+#     builds an APK in the cloud and offers it as a downloadable artifact — the optional build.
+#     Signed with the release key when the secrets exist, otherwise debug-signed (a fresh install,
+#     it cannot update an install of the release-signed APK).
 name: android-release
 on:
   push: { tags: ['v*'] }
@@ -17,45 +23,50 @@ jobs:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v7
+      - name: Use the committed, locally signed APK (tag without CI keystore)
+        id: committed
+        if: github.ref_type == 'tag' && env.HAS_KEYSTORE != 'true'
+        run: |
+          v="${VERSION_NAME#v}"
+          f="release/nocturne-$v.apk"
+          if [ ! -f "$f" ]; then
+            echo "::error::$f is not committed. Build it with scripts/build-apk.ps1 -Version $v, commit it, then tag."
+            exit 1
+          fi
+          mkdir -p out && cp "$f" out/
+          echo "done=true" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v7
+        if: steps.committed.outputs.done != 'true'
         with: { node-version: 22, cache: npm }
       - uses: actions/setup-java@v6
+        if: steps.committed.outputs.done != 'true'
         with: { distribution: temurin, java-version: 21, cache: gradle }
-      - name: Build web app (base "/" because Capacitor serves from https://localhost/)
+      - name: Build web app for the WebView (base "/", no service worker)
+        if: steps.committed.outputs.done != 'true'
         run: |
           npm ci
           npm run build
+          test ! -f dist/sw.js
+          npx cap sync android
         env:
           VITE_BASE_PATH: /
-          VITE_PLATFORM: android    # no service worker in the WebView
-      - name: No service worker in the APK bundle
-        run: test ! -f dist/sw.js
-      - name: Sync web assets and plugins into android/
-        run: npx cap sync android
-      - name: Refuse to tag-release without a keystore
-        if: github.ref_type == 'tag' && env.HAS_KEYSTORE != 'true'
-        run: |
-          echo "::error::Set ANDROID_KEYSTORE_BASE64 / _PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD first (docs/DEPLOYMENT.md)."
-          exit 1
-      - name: Decode keystore
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          VITE_PLATFORM: android
       - name: Build signed release APK
-        if: env.HAS_KEYSTORE == 'true'
+        if: steps.committed.outputs.done != 'true' && env.HAS_KEYSTORE == 'true'
         working-directory: android
         env:
-          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/release.p12
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.p12"
           chmod +x gradlew
           ./gradlew --no-daemon :app:assembleRelease -PversionCode="$VERSION_CODE" -PversionName="${VERSION_NAME#v}"
           mkdir -p ../out && cp app/build/outputs/apk/release/app-release.apk "../out/nocturne-${VERSION_NAME#v}.apk"
-      - name: Build debug-signed APK (no keystore configured)
-        if: env.HAS_KEYSTORE != 'true'
+      - name: Build debug-signed APK (no keystore secrets)
+        if: steps.committed.outputs.done != 'true' && env.HAS_KEYSTORE != 'true'
         working-directory: android
         run: |
           chmod +x gradlew
@@ -63,20 +74,20 @@ jobs:
           mkdir -p ../out && cp app/build/outputs/apk/debug/app-debug.apk "../out/nocturne-${VERSION_NAME#v}-debug.apk"
       - name: Checksums and size budget (6 MB)
         run: |
-          (cd out && sha256sum *.apk > SHA256SUMS.txt)
-          ls -la out
-          size=$(stat -c %s out/*.apk); echo "APK bytes: $size"; test "$size" -le 6291456
+          (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          for f in out/*.apk; do s=$(stat -c %s "$f"); echo "$f: $s bytes"; test "$s" -le 6291456; done
       - uses: actions/upload-artifact@v7
         with:
-          name: apk-${{ env.VERSION_NAME }}
+          name: nocturne-apk-${{ env.VERSION_NAME }}
           path: out/
-          retention-days: 14
-      - name: Attach APK to GitHub Release
+          retention-days: 30
+      - name: Create the GitHub Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          name: Nocturne ${{ github.ref_name }}
+          body_path: release/RELEASE_NOTES.md
           files: |
             out/*.apk
             out/SHA256SUMS.txt
