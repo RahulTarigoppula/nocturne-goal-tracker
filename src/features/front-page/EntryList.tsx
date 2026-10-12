@@ -49,16 +49,14 @@ export function EntryList(p: Props) {
   const onDragEnd = (id: string) => {
     const index = items.findIndex((e) => e.id === id);
     const original = p.open.findIndex((e) => e.id === id);
+    setDragId(null);
     if (index >= 0 && index !== original) {
-      // Keep the dropped order on screen until the write lands, so the row never jumps back.
       reorder(
         id,
         items.filter((e) => e.id !== id),
         index,
-      )
-        .catch(() => {})
-        .finally(() => setDragId(null));
-    } else setDragId(null);
+      ).catch(() => {});
+    }
   };
 
   const row = (e: Entry, folio: number | null) => ({

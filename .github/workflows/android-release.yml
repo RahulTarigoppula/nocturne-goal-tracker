@@ -12,7 +12,9 @@ on:
   push: { tags: ['v*'] }
   workflow_dispatch:
 permissions: { contents: write }
-concurrency: { group: android-${{ github.ref }}, cancel-in-progress: true }
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   apk:
     runs-on: ubuntu-24.04
