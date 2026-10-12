@@ -27,10 +27,10 @@
 ## Build the APK (Android)
 
 ```powershell
-.\scriptsuild-apk.ps1 -Version 0.1.2 -Code 3
+.\scripts\build-apk.ps1 -Version 0.1.2 -Code 3
 ```
 
-This builds the Android web bundle (no service worker), syncs it into `android/`, and produces a signed `release/nocturne-<version>.apk`. Raise `-Code` on every build so it installs over the previous one. The toolchain (JDK 21, Android SDK) and **your signing key** live in `C:\Workndroid-toolchain` (outside the repo). **Back up `C:\Workndroid-toolchain\keys\`** (the `.p12` and `.pass` files): a phone only accepts updates signed with the same key.
+This builds the Android web bundle (no service worker), syncs it into `android/`, and produces a signed `release/nocturne-<version>.apk`. Raise `-Code` on every build so it installs over the previous one. The toolchain (JDK 21, Android SDK) and **your signing key** live in `C:\Work\android-toolchain` (outside the repo). **Back up `C:\Work\android-toolchain\keys\`** (the `.p12` and `.pass` files): a phone only accepts updates signed with the same key.
 
 On the phone, the first time you set a reminder Android may deliver it a few minutes late; for on-the-minute reminders allow **Settings → Apps → Nocturne → Alarms & reminders** (the app's Colophon → Exact alarms › opens it).
 
