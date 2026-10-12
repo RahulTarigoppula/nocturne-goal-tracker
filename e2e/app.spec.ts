@@ -200,6 +200,9 @@ test("keyboard only: n files, j selects, x strikes, ] switches tabs, Ctrl+K find
 
 test("design tokens: hairlines, targets, one vermilion, fonts", async ({ page }) => {
   await open(page);
+  await expect(page.locator("main .entry")).toHaveCount(3);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(500); // let the masthead roll and entry fade-in settle
   const m = await page.evaluate(() => {
     const row = document.querySelector(".entry-body") as HTMLElement;
     const entry = document.querySelector(".entry") as HTMLElement;
@@ -274,15 +277,36 @@ test("hold to reorder: the lifted row takes the lift styling and the new order p
   await page.mouse.down();
   await page.waitForTimeout(320);
   await expect(page.locator(".entry.lifted")).toHaveCount(1);
-  const radius = await page
-    .locator(".entry.lifted .entry-body")
-    .evaluate((e) => getComputedStyle(e).borderTopLeftRadius);
-  expect(radius).toBe("12px");
-  for (let i = 1; i <= 7; i++) await page.mouse.move(x, y + i * 10);
+  // The lift transitions over 120 ms; wait for the settled radius rather than sampling mid-transition.
+  await expect
+    .poll(() => page.locator(".entry.lifted .entry-body").evaluate((e) => getComputedStyle(e).borderTopLeftRadius))
+    .toBe("12px");
+  for (let i = 1; i <= 7; i++) {
+    await page.mouse.move(x, y + i * 10);
+    await page.waitForTimeout(40);
+  }
   await page.mouse.up();
   const want = [before[1], before[0], before[2]];
   await expect.poll(titles).toEqual(want);
   const after = await titles();
+  // The screen re-orders immediately; wait until IndexedDB holds the new order before reloading.
+  const storedOrder = () =>
+    page.evaluate(
+      () =>
+        new Promise<string[]>((resolve) => {
+          const r = indexedDB.open("nocturne");
+          r.onsuccess = () => {
+            const g = r.result.transaction("entries").objectStore("entries").getAll();
+            g.onsuccess = () =>
+              resolve(
+                (g.result as { title: string; order: string }[])
+                  .sort((a, b) => (a.order < b.order ? -1 : 1))
+                  .map((e) => e.title),
+              );
+          };
+        }),
+    );
+  await expect.poll(storedOrder, { timeout: 10_000 }).toEqual(after);
   await page.reload();
   await expect.poll(titles).toEqual(after);
 });

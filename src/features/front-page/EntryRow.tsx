@@ -51,6 +51,8 @@ export const EntryRow = memo(function EntryRow(p: Props) {
     timer: 0,
     suppress: false,
     armed: false,
+    /** Motion's drag actually began (the finger moved after the lift). */
+    dragStarted: false,
   });
 
   // Block native scrolling once a lift or swipe owns the gesture.
@@ -75,6 +77,7 @@ export const EntryRow = memo(function EntryRow(p: Props) {
     const s = g.current;
     s.suppress = false;
     s.armed = false;
+    s.dragStarted = false;
     s.x0 = ev.clientX;
     s.y0 = ev.clientY;
     s.t0 = s.lastT = ev.timeStamp;
@@ -143,13 +146,12 @@ export const EntryRow = memo(function EntryRow(p: Props) {
       else if (left) p.onWhen(e);
     }
     if (s.mode === "lift") {
-      // A hold released without moving never starts Motion's drag, so onDragEnd will not fire.
-      window.setTimeout(() => {
-        if (g.current.mode === "lift") {
-          reset();
-          setLifted(false);
-        }
-      }, 0);
+      // A hold released without moving never starts Motion's drag, so onDragEnd will not fire:
+      // drop the lift here. A real drag is finished by onDragEnd instead (it persists the order).
+      if (!s.dragStarted) {
+        reset();
+        setLifted(false);
+      }
       return;
     }
     reset();
@@ -252,7 +254,10 @@ export const EntryRow = memo(function EntryRow(p: Props) {
         value={p.reorder.value}
         dragListener={false}
         dragControls={p.reorder.controls}
-        onDragStart={p.reorder.onDragStart}
+        onDragStart={() => {
+          g.current.dragStarted = true;
+          p.reorder?.onDragStart();
+        }}
         onDragEnd={onDragEnd}
         layout="position"
         layoutId={e.id}

@@ -34,26 +34,50 @@ export function EntryList(p: Props) {
   const [items, setItems] = useState(p.open);
   const [dragId, setDragId] = useState<string | null>(null);
   const lastOrder = useRef<string[]>([]);
+  // Motion can hand the drop to a handler from an earlier render; read the live order from refs.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const openRef = useRef(p.open);
+  openRef.current = p.open;
 
+  // After a drop, keep the dropped order on screen until the stored order catches up, so the row
+  // never snaps back for a frame (props still hold the pre-drop order until the live query refires).
+  const pendingOrder = useRef<string | null>(null);
   useEffect(() => {
-    if (!dragId) setItems(p.open);
+    if (dragId) return;
+    const ids = p.open.map((e) => e.id).join();
+    if (pendingOrder.current && pendingOrder.current !== ids) return;
+    pendingOrder.current = null;
+    setItems(p.open);
   }, [p.open, dragId]);
 
   const onReorder = (next: Entry[]) => {
     const ids = next.map((e) => e.id).join();
     if (ids !== lastOrder.current.join()) haptics.tick();
     lastOrder.current = next.map((e) => e.id);
+    itemsRef.current = next;
     setItems(next);
   };
 
   const onDragEnd = (id: string) => {
-    const index = items.findIndex((e) => e.id === id);
-    const original = p.open.findIndex((e) => e.id === id);
+    const live = itemsRef.current;
+    const index = live.findIndex((e) => e.id === id);
+    const original = openRef.current.findIndex((e) => e.id === id);
+    if (index >= 0 && index !== original) {
+      pendingOrder.current = live.map((e) => e.id).join();
+      // Safety valve: never hold a stale order if the write fails.
+      window.setTimeout(() => {
+        if (pendingOrder.current) {
+          pendingOrder.current = null;
+          setItems(openRef.current);
+        }
+      }, 1500);
+    }
     setDragId(null);
     if (index >= 0 && index !== original) {
       reorder(
         id,
-        items.filter((e) => e.id !== id),
+        live.filter((e) => e.id !== id),
         index,
       ).catch(() => {});
     }
