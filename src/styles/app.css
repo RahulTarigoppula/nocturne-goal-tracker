@@ -197,7 +197,7 @@ button {
 }
 .date-block {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   column-gap: var(--space-4);
   margin-top: var(--space-6);
   align-items: baseline;
@@ -1897,4 +1897,16 @@ textarea.field {
 }
 .ledger-line .st .roll {
   vertical-align: middle;
+}
+
+/* Narrow screens with large text: the month and greeting wrap instead of pushing the page sideways. */
+.date-block .month,
+.date-block .greeting {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 359px) {
+  .masthead .numeral {
+    font-size: 4.75rem;
+  }
 }
