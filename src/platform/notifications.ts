@@ -106,20 +106,28 @@ export async function syncSchedules(): Promise<void> {
   const { display } = await LocalNotifications.checkPermissions();
   if (display !== "granted") return;
   await setup();
+  // Plugin 8.3 opens the "Alarms & reminders" screen on every exact schedule() while the permission is
+  // denied. Never let a background re-sync do that: schedule inexactly until the user opts in from the
+  // footnote, and reschedule everything once exact alarms are allowed.
+  const exact = (await exactAlarms()) === "granted";
   const s = await getSettings();
   const desired = planNotifications(await db.entries.toArray(), s, Date.now());
   const all = (await LocalNotifications.getPending()).notifications;
-  type Extra = { at?: number; kind?: string; hour?: number; minute?: number } | undefined;
+  type Extra = { at?: number; kind?: string; hour?: number; minute?: number; exact?: boolean } | undefined;
   const pending = all
     .filter((n) => (n.extra as Extra)?.kind !== "habit")
-    .map((n) => ({ id: n.id, at: (n.extra as Extra)?.at }));
+    .map((n) => ({ id: n.id, at: (n.extra as Extra)?.exact === exact ? (n.extra as Extra)?.at : undefined }));
   const { cancel, schedule } = diffSchedules(desired, pending);
 
   // Habit reminders: repeating daily `on:` schedules, tracked by kind "habit".
   const habitPlan = planHabitReminders(await db.habits.toArray(), s);
   const habitPending = all
     .filter((n) => (n.extra as Extra)?.kind === "habit")
-    .map((n) => ({ id: n.id, hour: (n.extra as Extra)?.hour, minute: (n.extra as Extra)?.minute }));
+    .map((n) => ({
+      id: n.id,
+      hour: (n.extra as Extra)?.exact === exact ? (n.extra as Extra)?.hour : undefined,
+      minute: (n.extra as Extra)?.minute,
+    }));
   const habitDiff = diffHabitSchedules(habitPlan, habitPending);
   if (habitDiff.cancel.length)
     await LocalNotifications.cancel({ notifications: habitDiff.cancel.map((id) => ({ id })) });
@@ -129,7 +137,8 @@ export async function syncSchedules(): Promise<void> {
         id: p.id,
         title: p.title,
         body: p.body,
-        extra: { kind: "habit", habitId: p.habitId, hour: p.hour, minute: p.minute },
+        extra: { kind: "habit", habitId: p.habitId, hour: p.hour, minute: p.minute, exact },
+        isExactNotification: exact,
         schedule: { on: { hour: p.hour, minute: p.minute }, allowWhileIdle: true },
         smallIcon: "ic_stat_nocturne",
         channelId: "reminders",
@@ -144,7 +153,8 @@ export async function syncSchedules(): Promise<void> {
         title: p.title,
         body: p.body,
         actionTypeId: "ENTRY",
-        extra: { ...p.extra, at: p.at },
+        extra: { ...p.extra, at: p.at, exact },
+        isExactNotification: exact,
         schedule: { at: new Date(p.at), allowWhileIdle: true },
         smallIcon: "ic_stat_nocturne",
         channelId: "reminders",
@@ -161,7 +171,8 @@ export async function syncSchedules(): Promise<void> {
           title: "Evening Edition",
           body: s.privateReminders ? "Your issue is waiting." : reviewBody(await countOpenToday()),
           schedule: { on: { hour: s.dailyReview.hour, minute: s.dailyReview.minute }, allowWhileIdle: true },
-          extra: { kind: "review" },
+          extra: { kind: "review", exact },
+          isExactNotification: exact,
           smallIcon: "ic_stat_nocturne",
           channelId: "reminders",
         },

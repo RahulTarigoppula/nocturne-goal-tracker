@@ -14,3 +14,4 @@ android/build/
 *.keystore
 *.b64
 .env*.local
+release/

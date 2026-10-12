@@ -2,7 +2,7 @@
 
 *Your day, printed as a single issue.*
 
-**Status: v0.1.0 built, tested locally, and ready for you to deploy.** The app, engine, tests, Android shell and CI workflows are in this repo. It is not live yet: going live needs your GitHub account and your signing key. Follow [Go live](#go-live-your-steps-about-20-minutes); it takes about 20 minutes.
+**Status: v0.1.1 — the Android APK is built.** Install `release/nocturne-0.1.1.apk` on your phone (copy it over, open it, allow "install unknown apps" once). It was smoke-tested on an Android 14 emulator: launch, swipe-to-strike, quick add, a reminder notification with working Done/Snooze, and updating over the previous version with data kept. The web/PWA build and CI workflows are also here if you ever want them.
 
 <p>
   <img src="docs/screenshots/front-page-night.png" width="240" alt="Front Page, Night, evening edition">
@@ -23,6 +23,16 @@
 - Backups: a JSON export/import, a Markdown export, and a GitHub Gist backup with your own token. Gist backup can run automatically every 6 hours with last-writer-wins merge. A share card renders the day as a 1080×1920 PNG.
 - Android (Capacitor 8): real reminders (`AlarmManager`), a 21:00 daily review, Done/Snooze actions, deep links (`nocturne://today|entry/<id>|complete/<id>`), an exact-alarm footnote and a "Not firing?" note.
 - No account, no server, no analytics. The production bundle makes **zero network requests** until you configure a Gist backup.
+
+## Build the APK (Android)
+
+```powershell
+.\scriptsuild-apk.ps1 -Version 0.1.2 -Code 3
+```
+
+This builds the Android web bundle (no service worker), syncs it into `android/`, and produces a signed `release/nocturne-<version>.apk`. Raise `-Code` on every build so it installs over the previous one. The toolchain (JDK 21, Android SDK) and **your signing key** live in `C:\Workndroid-toolchain` (outside the repo). **Back up `C:\Workndroid-toolchain\keys\`** (the `.p12` and `.pass` files): a phone only accepts updates signed with the same key.
+
+On the phone, the first time you set a reminder Android may deliver it a few minutes late; for on-the-minute reminders allow **Settings → Apps → Nocturne → Alarms & reminders** (the app's Colophon → Exact alarms › opens it).
 
 ## Run it locally
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-10-12
+
+- Android: reminders no longer open the system "Alarms & reminders" screen on every launch; they schedule inexactly until you allow exact alarms, then upgrade automatically.
+- Android: the footer tabs hide while the keyboard is open.
+- `scripts/build-apk.ps1` builds a signed APK locally.
+
 ## 0.1.0 — 2026-09-29
 
 The first complete edition.

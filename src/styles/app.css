@@ -1878,3 +1878,9 @@ textarea.field {
   transition-delay: 0ms !important;
   transform: none;
 }
+
+/* Android: the footer tabs give way to the soft keyboard. */
+:root.kb-open .tabs,
+:root.kb-open .edition-note {
+  display: none;
+}

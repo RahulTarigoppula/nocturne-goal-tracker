@@ -120,6 +120,15 @@ export function Providers({ children, navigate }: { children: ReactNode; navigat
         return false;
       },
     }).catch(() => {});
+    if (isNative()) {
+      // The footer tabs give way to the keyboard instead of riding on top of it.
+      import("@capacitor/keyboard")
+        .then(({ Keyboard }) => {
+          Keyboard.addListener("keyboardWillShow", () => document.documentElement.classList.add("kb-open"));
+          Keyboard.addListener("keyboardWillHide", () => document.documentElement.classList.remove("kb-open"));
+        })
+        .catch(() => {});
+    }
     const unlock = () => unlockAudio();
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });

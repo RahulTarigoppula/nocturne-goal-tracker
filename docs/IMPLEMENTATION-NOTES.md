@@ -59,3 +59,11 @@ Written 2026-09-29, alongside the first implementation (v0.1.0). These notes rec
 ## 4. How the pieces talk
 
 `repo.ts` is the only writer. Every write stamps `updatedAt`, bumps `meta.revision` and emits `onWrite`. `providers.tsx` listens: it re-syncs notifications (debounced 500 ms), requests `storage.persist()` once, and runs the auto-backup check every 30 minutes. Components read through `data/queries.ts` (`useLiveQuery`) and derive sections, folios, streaks and strength through engine functions. Ephemeral UI state (sheet, undo slot, selection, strike count, colophon-just-closed) lives in one Zustand store.
+
+## 5. Android build (2026-10-12)
+
+- APK built locally with a portable toolchain in `C:\Workndroid-toolchain` (Temurin JDK 21, Android SDK platform 36 / build-tools 35, emulator for testing) and signed with a personal PKCS12 key kept in `C:\Workndroid-toolchain\keys` (not in git). `scripts/build-apk.ps1` reproduces it. Gradle needs `-Djava.net.preferIPv4Stack=true` on this network.
+- Verified on an Android 14 (API 34) emulator: cold start into the masthead, swipe-to-strike, quick add with chips, a per-entry reminder delivered as a notification on the `Reminders` channel with the foil "N" small icon, the Done action striking the entry from the shade, install-over-update keeping all data.
+- **Fix found on device:** `@capacitor/local-notifications` 8.3 opens the system "Alarms & reminders" screen on every `schedule()` when exact alarms are denied (the Android 14 default), and the app re-syncs on each resume, so it nagged on every open. Reminders are now scheduled with `isExactNotification` matching the current permission; once the user allows exact alarms (from the footnote), the next sync reschedules everything as exact.
+- **Fix found on device:** the footer tabs rode on top of the soft keyboard; they now hide while it is open (`@capacitor/keyboard` events → `html.kb-open`).
+- Still unverified (needs your real phone): reboot re-arm, Doze delivery, OEM battery managers, haptics feel, predictive back.
