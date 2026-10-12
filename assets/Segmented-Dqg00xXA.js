@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-DeQY593K.js";var t=e();function n({label:e,value:n,options:r,onChange:i}){return(0,t.jsx)(`fieldset`,{className:`segmented`,"aria-label":e,style:{border:0,margin:0,padding:0},children:r.map(e=>(0,t.jsx)(`button`,{type:`button`,"aria-pressed":e.value===n,onClick:()=>i(e.value),children:e.label},e.value))})}export{n as t};

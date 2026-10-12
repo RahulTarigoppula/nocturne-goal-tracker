@@ -1,0 +1,1 @@
+import{t as e}from"./dist-DXcRWg6V.js";var t=()=>e.isNativePlatform();export{t};
